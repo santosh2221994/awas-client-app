@@ -1,0 +1,46 @@
+export const initialEdges = [
+  {
+    id: 'e-trigger-process',
+    source: 'trigger-1',
+    target: 'process-1',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+    animated: true,
+  },
+  {
+    id: 'e-process-agent1',
+    source: 'process-1',
+    target: 'agent-1',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+  },
+  {
+    id: 'e-agent1-task1',
+    source: 'agent-1',
+    target: 'task-1',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+  },
+  {
+    id: 'e-process-agent2',
+    source: 'process-1',
+    target: 'agent-2',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+  },
+  {
+    id: 'e-agent2-task2',
+    source: 'agent-2',
+    target: 'task-2',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+  },
+  {
+    id: 'e-task1-agent2',
+    source: 'task-1',
+    target: 'agent-2',
+    type: 'smoothstep',
+    style: { stroke: '#d1d5db', strokeWidth: 1.5 },
+    animated: true,
+  },
+];
