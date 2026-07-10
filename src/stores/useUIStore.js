@@ -5,6 +5,7 @@ export const useUIStore = create((set) => ({
   isRightPanelOpen: false,
   activeTab: 'canvas',
   activeNavItem: 'automations',
+  selectedAgentId: null,
   rightPanelView: 'tools',
 
   toggleSidebar: () =>
@@ -20,6 +21,9 @@ export const useUIStore = create((set) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   setActiveNavItem: (item) => set({ activeNavItem: item }),
+
+  setSelectedAgentId: (agentId) => set({ selectedAgentId: agentId }),
+  clearSelectedAgentId: () => set({ selectedAgentId: null }),
 
   setRightPanelView: (view) => set({ rightPanelView: view }),
 }));

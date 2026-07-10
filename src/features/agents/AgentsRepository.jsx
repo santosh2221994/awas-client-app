@@ -2,31 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { Search, Plus, Bot, LayoutTemplate } from 'lucide-react';
 import { listAgents } from '../../api/services/agentService';
 import Button from '../../components/Button';
-import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useUIStore } from '../../stores/useUIStore';
 
 function AgentRow({ agent }) {
-  const { addNode } = useCanvasStore();
-  const { setActiveNavItem } = useUIStore();
+  const { setActiveNavItem, setSelectedAgentId } = useUIStore();
 
-  function handleAddToCanvas() {
-    addNode({
-      id: `agent-${agent.id || Date.now()}`,
-      type: 'agentNode',
-      position: { x: 680, y: 100 + Math.random() * 300 },
-      data: {
-        title: agent.name || 'Untitled Agent',
-        description: agent.description || '',
-        model: agent.model || 'gpt-4o-mini',
-        role: agent.type || 'Agent',
-        tools: agent.tools || [],
-      },
-    });
-    setActiveNavItem('automations');
+  function handleSelectAgent() {
+    setActiveNavItem('agents');
+    setSelectedAgentId(agent.id);
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4 border border-gray-200 rounded-2xl bg-white shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div
+      onClick={handleSelectAgent}
+      className="cursor-pointer flex flex-col gap-3 p-4 border border-gray-200 rounded-2xl bg-white shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/10 sm:flex-row sm:items-center sm:justify-between"
+    >
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
           <Bot className="w-5 h-5" />
@@ -44,9 +34,16 @@ function AgentRow({ agent }) {
           <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Model: {agent.model || 'Unknown'}</span>
           <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Tools: {agent.tools?.length ?? 0}</span>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleAddToCanvas}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleSelectAgent();
+          }}
+        >
           <LayoutTemplate className="w-3.5 h-3.5" />
-          Add to Canvas
+          View Agent
         </Button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 export const ENDPOINTS = {
   AGENTS: '/agents',
+  AGENT_BY_ID: (agentId) => `/agents/${agentId}`,
   AGENT_GENERATE: (agentId) => `/agents/${agentId}/generate`,
   AGENT_STREAM: (agentId) => `/agents/${agentId}/stream`,
   WORKFLOWS: '/workflows',

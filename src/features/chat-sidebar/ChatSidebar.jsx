@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Clock, ChevronDown, Plus } from 'lucide-react';
 import { useChatStore } from '../../stores/useChatStore';
 import { useChat } from '../../hooks/useChat';
+import { useUIStore } from '../../stores/useUIStore';
 import ChatMessage from './ChatMessage';
 import WarningBanner from './WarningBanner';
 import SuggestionCard from './SuggestionCard';
@@ -14,7 +15,8 @@ import {
 
 export default function ChatSidebar() {
   const { messages, warnings, suggestions, dismissWarning, dismissSuggestion, setMessages, addWarning, addSuggestion } = useChatStore();
-  const { send, runAutomation } = useChat();
+  const agentId = useUIStore((s) => s.selectedAgentId);
+  const { send, runAutomation } = useChat(agentId);
   const messagesEndRef = useRef(null);
 
   // Initialize with mock data

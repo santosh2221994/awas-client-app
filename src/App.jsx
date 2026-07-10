@@ -4,14 +4,15 @@ import ChatSidebar from './features/chat-sidebar/ChatSidebar';
 import FlowCanvas from './features/canvas/FlowCanvas';
 import RightPanel from './features/right-panel/RightPanel';
 import AgentsRepository from './features/agents/AgentsRepository';
+import AgentDetail from './features/agents/AgentDetail';
 import { useUIStore } from './stores/useUIStore';
 
 export default function App() {
-  const { activeNavItem } = useUIStore();
+  const { activeNavItem, selectedAgentId } = useUIStore();
 
   const renderContent = () => {
     if (activeNavItem === 'agents') {
-      return <AgentsRepository />;
+      return selectedAgentId ? <AgentDetail /> : <AgentsRepository />;
     }
 
     return (

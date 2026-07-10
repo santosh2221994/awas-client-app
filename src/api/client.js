@@ -9,17 +9,40 @@ const client = axios.create({
   },
 });
 
+// Request logging middleware
 client.interceptors.request.use((config) => {
   const token = useSessionStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Log request
+  console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${config.url}`, {
+    params: config.params,
+    data: config.data,
+    headers: config.headers,
+  });
+  
   return config;
 });
 
+// Response logging middleware
 client.interceptors.response.use(
-  (res) => res.data,
+  (res) => {
+    console.log(`[API RESPONSE] ${res.status} ${res.config.url}`, {
+      data: res.data,
+      headers: res.headers,
+    });
+    return res.data;
+  },
   (error) => {
+    console.error(`[API ERROR] ${error.response?.status || 'Unknown'} ${error.config?.url}`, {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data,
+      stack: error.stack,
+    });
+    
     if (error.response?.status === 401) {
       useSessionStore.getState().logout();
     }

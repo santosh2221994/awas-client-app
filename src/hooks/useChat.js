@@ -1,6 +1,7 @@
 import { useChatStore } from '../stores/useChatStore';
+import { generateAgentResponse } from '../api/services/chatService';
 
-export function useChat() {
+export function useChat(agentId) {
   const messages = useChatStore((s) => s.messages);
   const warnings = useChatStore((s) => s.warnings);
   const suggestions = useChatStore((s) => s.suggestions);
@@ -11,7 +12,7 @@ export function useChat() {
   const dismissSuggestion = useChatStore((s) => s.dismissSuggestion);
   const clearChat = useChatStore((s) => s.clearChat);
 
-  function send(text) {
+  async function send(text) {
     const userMsg = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -21,16 +22,27 @@ export function useChat() {
     addMessage(userMsg);
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const history = useChatStore.getState().messages;
+      const apiMessages = [...history, userMsg].map(({ role, content }) => ({ role, content }));
+      const response = await generateAgentResponse(agentId, apiMessages);
       const assistantMsg = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Understood. I'll process your request: "${text}"`,
+        content: response?.text ?? response?.content ?? JSON.stringify(response),
         timestamp: Date.now(),
       };
       addMessage(assistantMsg);
+    } catch (err) {
+      addMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Error: ${err.message ?? 'Request failed'}`,
+        timestamp: Date.now(),
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   }
 
   function dismiss(id) {
