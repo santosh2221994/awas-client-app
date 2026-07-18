@@ -1,11 +1,332 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Plus, Circle, Upload, Mic, Send } from 'lucide-react';
-import { getAgentById, generateAgentResponse } from '../../api/services/agentService';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw } from 'lucide-react';
+import { getAgentById, generateAgentResponse, getAgentThreads, getThreadMessages, getLogs } from '../../api/services/agentService';
 import Button from '../../components/Button';
 import { useUIStore } from '../../stores/useUIStore';
 
-const tabs = ['Chat', 'Editor', 'Evaluate', 'Review', 'Traces'];
+const tabs = ['Chat', 'Editor', 'Evaluate', 'Review', 'Traces', 'Context'];
 const rightPanelTabs = ['Overview', 'Model Settings', 'Memory'];
+
+function CollapsibleSection({ title, count, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-gray-700 bg-gray-900">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800 rounded-t-xl"
+      >
+        <span>{title}{count !== undefined && <span className="ml-1.5 text-xs text-gray-500">{count}</span>}</span>
+        {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+      </button>
+      {open && <div className="border-t border-gray-700">{children}</div>}
+    </div>
+  );
+}
+
+function AgentEditor({ agent }) {
+  const variables = [
+    { name: 'user-id', type: 'string' },
+    { name: 'user-tier', type: 'string' },
+    { name: 'tenant-id', type: 'string' },
+    { name: 'locale', type: 'string' },
+    { name: 'temperature-unit', type: 'string' },
+    { name: 'allow-commands', type: 'string' },
+  ];
+
+  const tools = agent?.tools || [];
+  const workspaceTools = agent?.workspaceTools || [];
+  const browserTools = agent?.browserTools || [];
+  const allTools = [
+    ...tools.map((t) => ({ name: t.name || t.id, tag: 'tool' })),
+    ...workspaceTools.map((name) => ({ name, tag: 'workspace' })),
+    ...browserTools.map((name) => ({ name, tag: 'browser' })),
+  ];
+
+  return (
+    <div className="space-y-4 overflow-y-auto">
+      {/* System Prompt */}
+      <CollapsibleSection title="System Prompt">
+        <div className="p-4">
+          <textarea
+            defaultValue={agent?.instructions || ''}
+            placeholder="Add instruction blocks to your agent. Blocks are combined in order to form the system prompt."
+            rows={10}
+            className="w-full bg-transparent text-sm text-gray-300 placeholder-gray-600 outline-none resize-y min-h-[160px]"
+          />
+        </div>
+      </CollapsibleSection>
+
+      <button className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition">
+        <Plus className="w-4 h-4" /> Add instruction block
+      </button>
+
+      {/* Variables */}
+      <CollapsibleSection title="Variables" count={variables.length}>
+        <div className="divide-y divide-gray-800">
+          {variables.map((v) => (
+            <div key={v.name} className="flex items-center justify-between px-4 py-2">
+              <span className="text-sm text-gray-300">{v.name}</span>
+              <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{v.type}</span>
+            </div>
+          ))}
+          <div className="px-4 py-2 text-xs text-gray-500">Defined via requestContextSchema in code.</div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Tools */}
+      <CollapsibleSection title="Tools" count={allTools.length}>
+        {allTools.length === 0 ? (
+          <div className="px-4 py-3 text-xs text-gray-500">No tools configured.</div>
+        ) : (
+          <div className="divide-y divide-gray-800">
+            {allTools.map((tool, idx) => (
+              <div key={idx} className="flex items-center justify-between px-4 py-2">
+                <span className="text-sm text-gray-300">{tool.name}</span>
+                <span className="text-xs text-gray-600 bg-gray-800 px-2 py-0.5 rounded">{tool.tag}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="border-t border-gray-700 px-4 py-2">
+          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition">
+            <Plus className="w-3.5 h-3.5" /> Add Tools
+          </button>
+        </div>
+      </CollapsibleSection>
+
+      {/* MCP Clients */}
+      <CollapsibleSection title="MCP Clients">
+        <div className="px-4 py-3 text-xs text-gray-500">No MCP clients configured yet.</div>
+        <div className="border-t border-gray-700 px-4 py-2">
+          <button className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition">
+            <Plus className="w-3.5 h-3.5" /> Add MCP Client
+          </button>
+        </div>
+      </CollapsibleSection>
+    </div>
+  );
+}
+
+function EvaluateTab({ agentId }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-gray-700 bg-gray-900 p-6">
+        <div className="text-sm font-medium text-gray-200 mb-1">Evaluation</div>
+        <p className="text-xs text-gray-500">
+          The Mastra evaluation API is not available for this agent. Evaluations are run via the Mastra CLI or SDK using <code className="bg-gray-800 px-1 rounded">mastra eval run</code>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ReviewTab({ agentId }) {
+  const [threads, setThreads] = useState([]);
+  const [selectedThread, setSelectedThread] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msgLoading, setMsgLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    getAgentThreads(agentId)
+      .then(setThreads)
+      .finally(() => setLoading(false));
+  }, [agentId]);
+
+  const selectThread = useCallback(async (thread) => {
+    setSelectedThread(thread);
+    setMsgLoading(true);
+    try {
+      const msgs = await getThreadMessages(thread.id);
+      setMessages(msgs);
+    } finally {
+      setMsgLoading(false);
+    }
+  }, []);
+
+  if (loading) return <div className="text-sm text-gray-500 p-4">Loading threads...</div>;
+
+  return (
+    <div className="flex h-full gap-4">
+      <div className="w-64 shrink-0 space-y-1 overflow-y-auto">
+        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Conversation Threads</div>
+        {threads.length === 0 && <div className="text-xs text-gray-600">No threads found.</div>}
+        {threads.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => selectThread(t)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition ${
+              selectedThread?.id === t.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{t.title || t.id}</span>
+            </div>
+            <div className="text-gray-600 mt-0.5 pl-5">{new Date(t.updatedAt).toLocaleDateString()}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-3">
+        {!selectedThread && <div className="text-sm text-gray-600">Select a thread to view messages.</div>}
+        {msgLoading && <div className="text-sm text-gray-500">Loading messages...</div>}
+        {!msgLoading && selectedThread && messages.length === 0 && (
+          <div className="text-sm text-gray-600">No messages in this thread.</div>
+        )}
+        {!msgLoading && messages.map((msg) => {
+          const text = msg.content?.parts?.find((p) => p.type === 'text')?.text || msg.content?.content || '';
+          if (!text) return null;
+          return (
+            <div
+              key={msg.id}
+              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                msg.role === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-gray-900 text-gray-200 border border-gray-800'
+              }`}
+            >
+              <div className="text-xs opacity-60 mb-1">{msg.role} · {new Date(msg.createdAt).toLocaleTimeString()}</div>
+              {text}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TracesTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLogs = useCallback(() => {
+    setLoading(true);
+    getLogs()
+      .then(setLogs)
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold text-gray-500 uppercase">Execution Logs</div>
+        <button onClick={fetchLogs} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 transition">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
+      {loading && <div className="text-sm text-gray-500">Loading traces...</div>}
+      {!loading && logs.length === 0 && (
+        <div className="rounded-xl border border-gray-700 bg-gray-900 px-4 py-6 text-center text-xs text-gray-500">
+          No trace logs found. Logs appear here when the agent runs with a configured log transport.
+        </div>
+      )}
+      {!loading && logs.map((log, idx) => (
+        <div key={idx} className="rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-xs font-mono text-gray-300">
+          <span className="text-gray-500 mr-3">{log.timestamp || log.time || ''}</span>
+          <span className={log.level === 'error' ? 'text-red-400' : log.level === 'warn' ? 'text-yellow-400' : 'text-gray-300'}>
+            [{log.level || 'info'}]
+          </span>
+          <span className="ml-2">{log.message || JSON.stringify(log)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ContextTab({ agentId }) {
+  const [threads, setThreads] = useState([]);
+  const [selectedThread, setSelectedThread] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msgLoading, setMsgLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    getAgentThreads(agentId)
+      .then((t) => { setThreads(t); if (t.length > 0) selectThread(t[0]); })
+      .finally(() => setLoading(false));
+  }, [agentId]);
+
+  const selectThread = useCallback(async (thread) => {
+    setSelectedThread(thread);
+    setMsgLoading(true);
+    try {
+      const msgs = await getThreadMessages(thread.id);
+      setMessages(msgs);
+    } finally {
+      setMsgLoading(false);
+    }
+  }, []);
+
+  if (loading) return <div className="text-sm text-gray-500 p-4">Loading context...</div>;
+
+  const tokenInfo = messages.find((m) => m.content?.parts?.some((p) => p.type === 'data-om-status'));
+  const omStatus = tokenInfo?.content?.parts?.find((p) => p.type === 'data-om-status')?.data;
+
+  return (
+    <div className="flex h-full gap-4">
+      <div className="w-64 shrink-0 space-y-1 overflow-y-auto">
+        <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Threads</div>
+        {threads.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => selectThread(t)}
+            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition ${
+              selectedThread?.id === t.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'
+            }`}
+          >
+            <div className="truncate">{t.title || t.id}</div>
+            <div className="text-gray-600 mt-0.5">{new Date(t.updatedAt).toLocaleDateString()}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-4">
+        {omStatus && (
+          <div className="rounded-xl border border-gray-700 bg-gray-900 p-4 space-y-2">
+            <div className="text-xs font-semibold text-gray-400 uppercase">Context Window</div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-800 rounded-lg p-3">
+                <div className="text-gray-500 mb-1">Message Tokens</div>
+                <div className="text-white font-mono">{omStatus.windows?.active?.messages?.tokens ?? '—'}</div>
+                <div className="text-gray-600">/ {omStatus.windows?.active?.messages?.threshold ?? '—'}</div>
+              </div>
+              <div className="bg-gray-800 rounded-lg p-3">
+                <div className="text-gray-500 mb-1">Observation Tokens</div>
+                <div className="text-white font-mono">{omStatus.windows?.active?.observations?.tokens ?? '—'}</div>
+                <div className="text-gray-600">/ {omStatus.windows?.active?.observations?.threshold ?? '—'}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {msgLoading && <div className="text-sm text-gray-500">Loading context...</div>}
+        {!msgLoading && !selectedThread && <div className="text-sm text-gray-600">No threads available.</div>}
+        {!msgLoading && selectedThread && (
+          <div className="rounded-xl border border-gray-700 bg-gray-900 p-4">
+            <div className="text-xs font-semibold text-gray-400 uppercase mb-3">Thread Messages ({messages.filter(m => m.content?.parts?.some(p => p.type === 'text')).length})</div>
+            <div className="space-y-2">
+              {messages.filter((m) => m.content?.parts?.some((p) => p.type === 'text')).map((msg) => {
+                const text = msg.content.parts.find((p) => p.type === 'text').text;
+                return (
+                  <div key={msg.id} className="flex gap-2 text-xs">
+                    <span className={`shrink-0 font-medium ${ msg.role === 'user' ? 'text-blue-400' : 'text-emerald-400'}`}>{msg.role}</span>
+                    <span className="text-gray-400 truncate">{text}</span>
+                  </div>
+                );
+              })}
+              {messages.filter((m) => m.content?.parts?.some((p) => p.type === 'text')).length === 0 && (
+                <div className="text-xs text-gray-600">No text messages in this thread.</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function AgentDetail() {
   const { selectedAgentId, clearSelectedAgentId } = useUIStore();
@@ -133,40 +454,23 @@ export default function AgentDetail() {
         );
       case 'Editor':
         return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-400">
-              <div className="text-xl font-semibold">Agent Editor</div>
-              <p className="mt-2 text-sm">Configure agent instructions and parameters here</p>
+          <div className="flex h-full gap-0">
+            <div className="flex-1 flex items-center justify-center text-gray-600 text-sm border-r border-gray-800">
+              Canvas / Preview
+            </div>
+            <div className="w-[30%] overflow-y-auto pl-4">
+              <AgentEditor agent={agent} />
             </div>
           </div>
         );
       case 'Evaluate':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-400">
-              <div className="text-xl font-semibold">Evaluation Metrics</div>
-              <p className="mt-2 text-sm">Test and evaluate agent performance</p>
-            </div>
-          </div>
-        );
+        return <EvaluateTab agentId={selectedAgentId} />;
       case 'Review':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-400">
-              <div className="text-xl font-semibold">Review History</div>
-              <p className="mt-2 text-sm">Review past conversations and decisions</p>
-            </div>
-          </div>
-        );
+        return <ReviewTab agentId={selectedAgentId} />;
       case 'Traces':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-gray-400">
-              <div className="text-xl font-semibold">Execution Traces</div>
-              <p className="mt-2 text-sm">View detailed execution traces and logs</p>
-            </div>
-          </div>
-        );
+        return <TracesTab />;
+      case 'Context':
+        return <ContextTab agentId={selectedAgentId} />;
       default:
         return null;
     }
@@ -212,11 +516,10 @@ export default function AgentDetail() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-0 py-3 text-sm font-medium border-b-2 transition ${
-                  activeTab === tab
+                className={`px-0 py-3 text-sm font-medium border-b-2 transition ${activeTab === tab
                     ? 'text-white border-white'
                     : 'text-gray-400 border-transparent hover:text-gray-300'
-                }`}
+                  }`}
               >
                 {tab}
               </button>
@@ -236,8 +539,8 @@ export default function AgentDetail() {
             <div className="border-t border-gray-800 p-6">
               <div className="space-y-3">
                 <div className="flex gap-2">
-                  <select 
-                    value={selectedProvider} 
+                  <select
+                    value={selectedProvider}
                     onChange={handleProviderChange}
                     className="rounded-lg border border-gray-800 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-gray-700"
                   >
@@ -245,8 +548,8 @@ export default function AgentDetail() {
                     <option>Google</option>
                     <option>Anthropic</option>
                   </select>
-                  <select 
-                    value={selectedModel} 
+                  <select
+                    value={selectedModel}
                     onChange={(e) => setSelectedModel(e.target.value)}
                     className="rounded-lg border border-gray-800 bg-black px-3 py-2 text-sm text-gray-300 outline-none focus:border-gray-700 flex-1"
                   >
@@ -275,9 +578,9 @@ export default function AgentDetail() {
                   <button className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-800 bg-black hover:bg-gray-900 transition" title="Voice input">
                     <Mic className="w-5 h-5 text-gray-400" />
                   </button>
-                  <button 
+                  <button
                     onClick={handleSendMessage}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 transition" 
+                    className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 transition"
                     title="Send message"
                   >
                     <Send className="w-5 h-5 text-white" />
@@ -306,11 +609,10 @@ export default function AgentDetail() {
                 <button
                   key={tab}
                   onClick={() => setActiveRightTab(tab)}
-                  className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded transition ${
-                    activeRightTab === tab
+                  className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded transition ${activeRightTab === tab
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-400 hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   {tab}
                 </button>

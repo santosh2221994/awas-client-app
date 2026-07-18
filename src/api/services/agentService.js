@@ -28,6 +28,8 @@ export function getAgentById(agentId) {
       name: t.name || t.description,
       description: t.description || '',
     })),
+    workspaceTools: agent.workspaceTools || [],
+    browserTools: agent.browserTools || [],
     status: agent.status || 'active',
     createdAt: agent.createdAt,
     updatedAt: agent.updatedAt,
@@ -53,4 +55,16 @@ export function streamAgentResponse(agentId, messages, requestOptions = {}) {
     messages,
     ...requestOptions,
   });
+}
+
+export function getAgentThreads(agentId) {
+  return client.get(`${ENDPOINTS.MEMORY_THREADS}?resourceId=${agentId}`).then((data) => data.threads || []);
+}
+
+export function getThreadMessages(threadId) {
+  return client.get(ENDPOINTS.MEMORY_THREAD_MESSAGES(threadId)).then((data) => data.messages || []);
+}
+
+export function getLogs() {
+  return client.get(`${ENDPOINTS.LOGS}?transportId=default`).then((data) => data.logs || []);
 }
