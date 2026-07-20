@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Clock, ChevronDown, Plus, MessageSquare } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Clock, ChevronDown, Plus } from 'lucide-react';
 import { useChatStore } from '../../stores/useChatStore';
 import { useChat } from '../../hooks/useChat';
 import { useUIStore } from '../../stores/useUIStore';
@@ -8,28 +8,17 @@ import WarningBanner from './WarningBanner';
 import SuggestionCard from './SuggestionCard';
 import ChatInput from './ChatInput';
 import { initialMessages, initialWarnings, initialSuggestions } from '../../mocks/chatMessages';
-import { getMemoryThreads } from '../../api/services/chatService';
 
 export default function ChatSidebar() {
   const { messages, warnings, suggestions, dismissWarning, dismissSuggestion, setMessages, addWarning, addSuggestion } = useChatStore();
   const agentId = useUIStore((s) => s.selectedAgentId);
   const { send, runAutomation } = useChat(agentId);
   const messagesEndRef = useRef(null);
-  const [threads, setThreads] = useState([]);
-  const [threadsLoading, setThreadsLoading] = useState(false);
 
   useEffect(() => {
     setMessages(initialMessages);
     initialWarnings.forEach(w => addWarning(w));
     initialSuggestions.forEach(s => addSuggestion(s));
-  }, []);
-
-  useEffect(() => {
-    setThreadsLoading(true);
-    getMemoryThreads()
-      .then((data) => setThreads(Array.isArray(data) ? data : (data?.threads ?? [])))
-      .catch(() => setThreads([]))
-      .finally(() => setThreadsLoading(false));
   }, []);
 
   // Scroll to bottom on new messages
@@ -66,30 +55,6 @@ export default function ChatSidebar() {
           ))}
           <div ref={messagesEndRef} />
         </div>
-
-        {/* Chat History below conversation */}
-        {(threadsLoading || threads.length > 0) && (
-          <div className="pt-3 border-t border-gray-200">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Chat History</p>
-            {threadsLoading ? (
-              <p className="text-xs text-gray-400">Loading...</p>
-            ) : (
-              <ul className="space-y-1">
-                {threads.map((thread) => (
-                  <li
-                    key={thread.id}
-                    className="flex items-center gap-2 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                    {thread.created_at
-                      ? new Date(thread.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })
-                      : thread.id}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
 
         {/* Warning Banner Card */}
         {warnings.length > 0 && (

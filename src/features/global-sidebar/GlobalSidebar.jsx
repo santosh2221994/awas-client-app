@@ -1,5 +1,5 @@
 import React from 'react';
-import { PanelLeftClose, PanelLeftOpen, BookOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, BookOpen, LogOut } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { NAV_GROUPS } from '../../utils/constants';
@@ -10,7 +10,7 @@ import { cn } from '../../utils/cn';
 
 export default function GlobalSidebar() {
   const { isSidebarCollapsed, toggleSidebar, activeNavItem, setActiveNavItem } = useUIStore();
-  const { organization } = useSessionStore();
+  const { organization, logout } = useSessionStore();
 
   return (
     <div
@@ -53,6 +53,18 @@ export default function GlobalSidebar() {
           isCollapsed={isSidebarCollapsed}
           onClick={setActiveNavItem}
         />
+
+        {/* Logout button */}
+        <button
+          onClick={logout}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150 outline-none",
+            isSidebarCollapsed ? "justify-center" : "justify-start"
+          )}
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          {!isSidebarCollapsed && <span>Log Out</span>}
+        </button>
 
         {/* Collapse Toggle Button */}
         <button
