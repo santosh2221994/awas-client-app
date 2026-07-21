@@ -1,20 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Position } from '@xyflow/react';
-import { 
-  User, 
-  Cpu, 
-  FileText, 
-  FileSpreadsheet, 
-  Image, 
-  Brain, 
-  Zap, 
-  Link2Off, 
+import {
+  User,
+  Cpu,
+  FileText,
+  FileSpreadsheet,
+  Image,
+  Brain,
+  Zap,
+  Link2Off,
   Link2,
   Trash2
 } from 'lucide-react';
 import NodeHandle from './NodeHandle';
 import Badge from '../../../components/Badge';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { listAgents } from '../../../api/services/agentService';
 
 const iconMap = {
   User,
@@ -27,8 +28,32 @@ const iconMap = {
 };
 
 export default function AgentNode({ id, data }) {
-  const { removeNode } = useCanvasStore();
+  const { removeNode, updateNodeData } = useCanvasStore();
   const { title, description, model, tools, role } = data;
+  const [agentsList, setAgentsList] = useState([]);
+
+  useEffect(() => {
+    listAgents()
+      .then((list) => {
+        setAgentsList(list);
+        if (list.length > 0 && (!title || title.startsWith('Custom Agent') || title === 'Agent')) {
+          const firstAgent = list[0];
+          updateNodeData(id, {
+            title: firstAgent.name,
+            description: firstAgent.description,
+            model: firstAgent.model,
+            role: firstAgent.type || 'Agent',
+            tools: firstAgent.tools.map((t) => ({
+              name: t.name,
+              id: t.id,
+              icon: 'FileText',
+              connected: true
+            }))
+          });
+        }
+      })
+      .catch((err) => console.error('Failed to load agents list in node', err));
+  }, [id, title, updateNodeData]);
 
   const getToolIcon = (iconName) => {
     const IconComponent = iconMap[iconName];
@@ -43,14 +68,39 @@ export default function AgentNode({ id, data }) {
 
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-tr-xl">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
             <User className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-gray-800 truncate" title={title}>
-              {title}
-            </h3>
+          <div className="min-w-0 flex-1">
+            <select
+              value={title || ''}
+              onChange={(e) => {
+                const selectedAgent = agentsList.find((a) => a.name === e.target.value);
+                if (selectedAgent) {
+                  updateNodeData(id, {
+                    title: selectedAgent.name,
+                    description: selectedAgent.description,
+                    model: selectedAgent.model,
+                    role: selectedAgent.type || 'Agent',
+                    tools: selectedAgent.tools.map((t) => ({
+                      name: t.name,
+                      id: t.id,
+                      icon: 'FileText',
+                      connected: true
+                    }))
+                  });
+                }
+              }}
+              className="text-xs font-semibold text-gray-800 bg-transparent border-b border-dashed border-gray-300 focus:border-indigo-500 outline-none pr-4 cursor-pointer max-w-[130px] font-sans truncate"
+            >
+              <option value="">Select Agent...</option>
+              {agentsList.map((a) => (
+                <option key={a.id} value={a.name}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
             <span className="text-[10px] text-gray-400 block truncate">
               {role || 'Agent'}
             </span>
@@ -100,14 +150,13 @@ export default function AgentNode({ id, data }) {
                     {getToolIcon(tool.icon)}
                     <span className="truncate">{tool.name}</span>
                   </div>
-                  
+
                   {/* Status Indicator */}
                   {tool.connected !== undefined && (
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          tool.connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
-                        }`}
+                        className={`w-1.5 h-1.5 rounded-full ${tool.connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
+                          }`}
                       />
                       <span className="text-[9px] text-gray-400">
                         {tool.connected ? 'Active' : 'Unconnected'}

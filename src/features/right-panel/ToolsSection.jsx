@@ -1,18 +1,35 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import SearchInput from '../../components/SearchInput';
 import { useToolStore } from '../../stores/useToolStore';
-import { toolCategories } from '../../mocks/tools';
+import { listTools } from '../../api/services/toolService';
 import ToolCategoryAccordion from './ToolCategoryAccordion';
 
 export default function ToolsSection() {
   const { searchQuery, setSearchQuery, expandedCategories, toggleCategory } = useToolStore();
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    listTools()
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        } else {
+          console.warn('API returned empty categories, importing mocks...');
+          import('../../mocks/tools').then((mod) => setCategories(mod.toolCategories));
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load tool categories from API, falling back to mocks', err);
+        import('../../mocks/tools').then((mod) => setCategories(mod.toolCategories));
+      });
+  }, []);
 
   // Handle searching tools filtering
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return toolCategories;
-    
+    if (!searchQuery.trim()) return categories;
+
     const query = searchQuery.toLowerCase();
-    return toolCategories
+    return categories
       .map((category) => {
         const matchingTools = category.tools.filter(
           (tool) =>
@@ -25,7 +42,7 @@ export default function ToolsSection() {
         };
       })
       .filter((category) => category.tools.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, categories]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">

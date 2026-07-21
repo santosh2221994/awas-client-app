@@ -8,4 +8,8 @@ export const ENDPOINTS = {
   MEMORY_THREADS: '/memory/threads',
   MEMORY_THREAD_MESSAGES: (threadId) => `/memory/threads/${threadId}/messages`,
   LOGS: '/logs',
+  TOOLS: '/tools',
+  AUTH_SIGNUP: '/auth/signup',
+  AUTH_LOGIN: '/auth/login',
+  AUTH_PROFILE: '/auth/profile',
 };

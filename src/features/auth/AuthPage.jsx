@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import TheEntity from './TheEntity';
+import client from '../../api/client';
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
@@ -10,6 +11,7 @@ export default function AuthPage() {
     const [name, setName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useSessionStore();
 
@@ -18,6 +20,7 @@ export default function AuthPage() {
         setPassword('password');
         setIsLogin(true);
         setError('');
+        setSuccessMessage('');
     };
 
     const validate = () => {
@@ -48,20 +51,31 @@ export default function AuthPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setSuccessMessage('');
 
         if (!validate()) return;
 
         setLoading(true);
 
-        // Simulate API call delay
-        setTimeout(() => {
-            setLoading(false);
-            try {
-                login({ email, name: isLogin ? 'Demo Admin' : name }, 'mock-jwt-token-xyz');
-            } catch (err) {
-                setError('Authentication failed. Please try again.');
+        try {
+            if (isLogin) {
+                const res = await client.post('/auth/login', { email, password });
+                const token = res.access_token || res.accessToken || res.token || 'mock-token';
+                const userData = res.user || { email, name: res.name || 'Demo User' };
+                login(userData, token);
+            } else {
+                await client.post('/auth/signup', { email, password, name });
+                setSuccessMessage('Registration successful! Please login with your new account.');
+                setIsLogin(true);
+                setPassword('');
             }
-        }, 850);
+        } catch (err) {
+            console.error('Auth error:', err);
+            const errMsg = err.message || err.data?.message || 'Authentication failed. Please try again.';
+            setError(errMsg);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -87,7 +101,7 @@ export default function AuthPage() {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-700/60 shadow-lg text-emerald-400 font-black text-xl mb-4 select-none">
                             A
                         </div>
-                        <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">Welcome to Mastra Studio</h2>
+                        <h2 className="text-2xl font-bold text-zinc-100 tracking-tight">Welcome to Awas Client App</h2>
                         <p className="text-zinc-400 text-xs mt-1.5">Manage agents, workflows, and integrations seamlessly</p>
                     </div>
 
@@ -114,6 +128,14 @@ export default function AuthPage() {
                             Sign Up
                         </button>
                     </div>
+
+                    {/* Inline Success Feedback */}
+                    {successMessage && (
+                        <div className="mb-4 px-4 py-2.5 bg-emerald-950/20 border border-emerald-800/40 rounded-lg text-emerald-450 text-xs font-medium flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse" />
+                            {successMessage}
+                        </div>
+                    )}
 
                     {/* Inline Error State Feedback */}
                     {error && (

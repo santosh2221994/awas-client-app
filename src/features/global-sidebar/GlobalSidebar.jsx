@@ -10,7 +10,7 @@ import { cn } from '../../utils/cn';
 
 export default function GlobalSidebar() {
   const { isSidebarCollapsed, toggleSidebar, activeNavItem, setActiveNavItem } = useUIStore();
-  const { organization, logout } = useSessionStore();
+  const { organization, user, logout } = useSessionStore();
 
   return (
     <div
@@ -21,7 +21,7 @@ export default function GlobalSidebar() {
     >
       {/* Top Organization Selector */}
       <div className="pt-2">
-        <OrgSelector organization={organization} isCollapsed={isSidebarCollapsed} />
+        <OrgSelector organization={organization} user={user} isCollapsed={isSidebarCollapsed} />
       </div>
 
       <div className="border-b border-gray-100 mx-3 my-1" />

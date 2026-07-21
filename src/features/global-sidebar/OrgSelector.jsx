@@ -2,8 +2,8 @@ import React from 'react';
 import Avatar from '../../components/Avatar';
 import { ChevronDown } from 'lucide-react';
 
-export default function OrgSelector({ organization, isCollapsed }) {
-  const orgName = organization?.name || 'Your organization';
+export default function OrgSelector({ organization, user, isCollapsed }) {
+  const orgName = user?.name || organization?.name || 'Your organization';
 
   if (isCollapsed) {
     return (
