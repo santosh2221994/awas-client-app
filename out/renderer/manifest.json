@@ -1,0 +1,46 @@
+{
+  "name": "AWAS – Agentic Workflow Automation System",
+  "short_name": "AWAS",
+  "description": "Build, orchestrate, and monitor AI-powered agentic workflow automations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#863bff",
+  "categories": ["productivity", "business", "developer tools"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Automations",
+      "short_name": "Automations",
+      "description": "View and manage workflow automations",
+      "url": "/#/automations"
+    },
+    {
+      "name": "Traces",
+      "short_name": "Traces",
+      "description": "Inspect agent execution traces",
+      "url": "/#/traces"
+    },
+    {
+      "name": "Agents Repository",
+      "short_name": "Agents",
+      "description": "Browse and configure AI agents",
+      "url": "/#/agents"
+    },
+    {
+      "name": "Settings",
+      "short_name": "Settings",
+      "description": "Manage workspace settings",
+      "url": "/#/settings"
+    }
+  ]
+}

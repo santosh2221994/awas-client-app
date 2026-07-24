@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  Workflow, 
-  Users, 
-  Bot, 
-  Wrench, 
-  Activity, 
-  Cpu, 
-  Variable, 
-  BarChart3, 
-  CreditCard, 
-  Settings, 
-  BookOpen 
+import {
+  Workflow,
+  Users,
+  Bot,
+  Wrench,
+  Activity,
+  Cpu,
+  Variable,
+  BarChart3,
+  CreditCard,
+  Settings,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Tooltip from '../../components/Tooltip';

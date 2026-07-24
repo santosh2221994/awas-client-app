@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Wrench, Globe, Check, PowerOff, Shield, RefreshCw } from 'lucide-react';
+import { Search, Plus, Globe, PowerOff, Check, Wrench, RefreshCw } from 'lucide-react';
 import { toolCategories } from '../../mocks/tools';
 import Button from '../../components/Button';
 
@@ -82,8 +82,8 @@ export default function ToolsPage() {
                                 setSearchQuery('');
                             }}
                             className={`px-0 py-3.5 text-xs font-semibold border-b-2 transition ${activeTab === tab
-                                    ? 'text-indigo-650 border-indigo-600'
-                                    : 'text-gray-500 border-transparent hover:text-gray-900'
+                                ? 'text-indigo-650 border-indigo-600'
+                                : 'text-gray-500 border-transparent hover:text-gray-900'
                                 }`}
                         >
                             {tab}
@@ -182,16 +182,16 @@ export default function ToolsPage() {
                                             </td>
                                             <td className="px-6 py-4.5">
                                                 <span className={`text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded-full ${conn.type === 'MCP'
-                                                        ? 'bg-purple-55 bg-purple-100/60 text-purple-600 border border-purple-200/40'
-                                                        : 'bg-pink-100/60 text-pink-600 border border-pink-200/40'
+                                                    ? 'bg-purple-55 bg-purple-100/60 text-purple-600 border border-purple-200/40'
+                                                    : 'bg-pink-100/60 text-pink-600 border border-pink-200/40'
                                                     }`}>
                                                     {conn.type}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4.5">
                                                 <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${conn.status === 'Configured'
-                                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                                        : 'bg-gray-100 text-gray-500 border border-gray-150'
+                                                    ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                                                    : 'bg-gray-100 text-gray-500 border border-gray-150'
                                                     }`}>
                                                     {conn.status}
                                                 </span>
@@ -202,8 +202,8 @@ export default function ToolsPage() {
                                                     <button
                                                         onClick={() => handleToggleConnect(conn.id)}
                                                         className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold border transition ${conn.status === 'Configured'
-                                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100/60'
-                                                                : 'bg-white text-gray-700 border-gray-250 hover:bg-gray-50'
+                                                            ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100/60'
+                                                            : 'bg-white text-gray-700 border-gray-250 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         {conn.status === 'Configured' ? (
@@ -307,8 +307,8 @@ export default function ToolsPage() {
                                     </div>
                                     <div className="flex flex-col items-end justify-between min-h-[75px] shrink-0">
                                         <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${integ.status === 'Active'
-                                                ? 'bg-emerald-950/10 text-emerald-600 border border-emerald-900/10'
-                                                : 'bg-zinc-100 text-zinc-400 border border-zinc-200'
+                                            ? 'bg-emerald-950/10 text-emerald-600 border border-emerald-900/10'
+                                            : 'bg-zinc-100 text-zinc-400 border border-zinc-200'
                                             }`}>
                                             {integ.status}
                                         </span>

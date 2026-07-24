@@ -2,16 +2,21 @@ import client from '../client';
 import { ENDPOINTS } from '../endpoints';
 
 export function listAgents() {
-  return client.get(ENDPOINTS.AGENTS).then((data) =>
-    Object.values(data).map((agent) => ({
+  return client.get(ENDPOINTS.AGENTS).then((data) => {
+    // NestJS returns an array; Mastra returns a keyed object — handle both
+    const agents = Array.isArray(data) ? data : Object.values(data);
+    return agents.map((agent) => ({
       id: agent.id || agent.name,
       name: agent.name,
       description: agent.description,
-      model: agent.modelId,
-      type: agent.provider,
-      tools: Object.values(agent.tools || {}).map((t) => ({ name: t.description?.slice(0, 40), id: t.id })),
-    }))
-  );
+      model: agent.modelId || agent.schema?.modelId || null,
+      type: agent.provider || agent.schema?.provider || agent.version || 'Agent',
+      tools: Object.values(agent.tools || agent.schema?.tools || {}).map((t) => ({
+        name: t.description?.slice(0, 40) || t.name,
+        id: t.id,
+      })),
+    }));
+  });
 }
 
 export function getAgentById(agentId) {
@@ -19,11 +24,11 @@ export function getAgentById(agentId) {
     id: agent.id || agent.name,
     name: agent.name,
     description: agent.description,
-    model: agent.modelId || agent.model || agent.modelName,
-    type: agent.provider || agent.type,
-    provider: agent.provider,
-    instructions: agent.instructions || agent.initialInstructions || '',
-    tools: Object.values(agent.tools || {}).map((t) => ({
+    model: agent.modelId || agent.schema?.modelId || agent.model || agent.modelName || null,
+    type: agent.provider || agent.schema?.provider || agent.type || 'Agent',
+    provider: agent.provider || agent.schema?.provider || null,
+    instructions: agent.instructions || agent.schema?.instructions || agent.initialInstructions || '',
+    tools: Object.values(agent.tools || agent.schema?.tools || {}).map((t) => ({
       id: t.id,
       name: t.name || t.description,
       description: t.description || '',

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw, Info, Share2, ArrowUp, Link2, Clock, Copy, MoreHorizontal, Terminal, Settings } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Plus, Mic, ChevronDown, ChevronRight, MessageSquare, Info, Share2, ArrowUp, Clock, Copy, MoreHorizontal, Terminal, Settings, RefreshCw } from 'lucide-react';
 import { getAgentById, generateAgentResponse, getAgentThreads, getThreadMessages, getLogs } from '../../api/services/agentService';
 import Button from '../../components/Button';
 import { useUIStore } from '../../stores/useUIStore';
