@@ -47,10 +47,12 @@ function createWindow() {
 }
 app.on("ready", () => {
 	if (!isDev) session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-		callback({ responseHeaders: {
-			...details.responseHeaders,
-			"Content-Security-Policy": ["default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:3000 http://localhost:4111 ws://localhost:*; img-src 'self' data:; font-src 'self' data:;"]
-		} });
+		callback({
+			responseHeaders: {
+				...details.responseHeaders,
+				"Content-Security-Policy": ["default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:3000 http://localhost:4111 ws://localhost:*; img-src 'self' data:; font-src 'self' data:;"]
+			}
+		});
 	});
 	createWindow();
 });
@@ -62,4 +64,4 @@ app.on("activate", () => {
 });
 ipcMain.handle("app:get-version", () => app.getVersion());
 //#endregion
-export {};
+export { };
