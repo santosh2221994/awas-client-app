@@ -10,7 +10,8 @@ import {
   BarChart3, 
   CreditCard, 
   Settings, 
-  BookOpen 
+  BookOpen,
+  ShoppingBag
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import Tooltip from '../../components/Tooltip';
@@ -26,7 +27,8 @@ const iconMap = {
   BarChart3,
   CreditCard,
   Settings,
-  BookOpen
+  BookOpen,
+  ShoppingBag
 };
 
 export default function NavItem({ id, label, icon, isActive, isCollapsed, onClick }) {
