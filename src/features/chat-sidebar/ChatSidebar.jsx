@@ -4,22 +4,15 @@ import { useChatStore } from '../../stores/useChatStore';
 import { useChat } from '../../hooks/useChat';
 import { useUIStore } from '../../stores/useUIStore';
 import ChatMessage from './ChatMessage';
-import WarningBanner from './WarningBanner';
-import SuggestionCard from './SuggestionCard';
 import ChatInput from './ChatInput';
-import { initialMessages, initialWarnings, initialSuggestions } from '../../mocks/chatMessages';
 
 export default function ChatSidebar() {
-  const { messages, warnings, suggestions, dismissWarning, dismissSuggestion, setMessages, addWarning, addSuggestion } = useChatStore();
-  const agentId = useUIStore((s) => s.selectedAgentId);
-  const { send, runAutomation } = useChat(agentId);
+  const messages = useChatStore((s) => s.messages);
+  const selectedAgentId = useUIStore((s) => s.selectedAgentId);
+  const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
+  const activeAgentId = selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
+  const { send } = useChat(activeAgentId);
   const messagesEndRef = useRef(null);
-
-  useEffect(() => {
-    setMessages(initialMessages);
-    initialWarnings.forEach(w => addWarning(w));
-    initialSuggestions.forEach(s => addSuggestion(s));
-  }, []);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -48,38 +41,24 @@ export default function ChatSidebar() {
 
       {/* Messages and Cards Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
-        {/* Render Chat Messages */}
-        <div className="space-y-3">
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Warning Banner Card */}
-        {warnings.length > 0 && (
-          <div className="pt-2 border-t border-gray-100">
-            {warnings.map((warning) => (
-              <WarningBanner
-                key={warning.id}
-                warning={warning}
-                onDismiss={dismissWarning}
-              />
-            ))}
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6 select-none">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center">
+              <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.84L3 20l1.09-3.27C3.4 15.5 3 13.8 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">How may I help you?</p>
+              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">Ask me anything about agents,<br />workflows, or canvas setup.</p>
+            </div>
           </div>
-        )}
-
-        {/* Suggestion Card */}
-        {suggestions.length > 0 && (
-          <div className="pt-2 border-t border-gray-100">
-            {suggestions.map((suggestion) => (
-              <SuggestionCard
-                key={suggestion.id}
-                suggestion={suggestion}
-                onPrimaryAction={runAutomation}
-                onDismiss={dismissSuggestion}
-              />
+        ) : (
+          <div className="space-y-3">
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} />
             ))}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </div>

@@ -1,31 +1,38 @@
+import { useRef } from 'react';
 import { useChatStore } from '../stores/useChatStore';
 import { generateAgentResponse } from '../api/services/chatService';
 
 export function useChat(agentId) {
   const messages = useChatStore((s) => s.messages);
-  const warnings = useChatStore((s) => s.warnings);
-  const suggestions = useChatStore((s) => s.suggestions);
   const isLoading = useChatStore((s) => s.isLoading);
   const addMessage = useChatStore((s) => s.addMessage);
   const setLoading = useChatStore((s) => s.setLoading);
-  const dismissWarning = useChatStore((s) => s.dismissWarning);
-  const dismissSuggestion = useChatStore((s) => s.dismissSuggestion);
   const clearChat = useChatStore((s) => s.clearChat);
+  const resolvedAgentId = agentId || 'studio-chat-agent';
+  const threadIdRef = useRef(crypto.randomUUID());
 
   async function send(text) {
+    if (!text?.trim()) return;
+
     const userMsg = {
       id: crypto.randomUUID(),
       role: 'user',
       content: text,
       timestamp: Date.now(),
     };
-    addMessage(userMsg);
     setLoading(true);
 
     try {
       const history = useChatStore.getState().messages;
-      const apiMessages = [...history, userMsg].map(({ role, content }) => ({ role, content }));
-      const response = await generateAgentResponse(agentId, apiMessages);
+      const raw = [
+        ...history.map(({ role, content }) => ({ role, content })),
+        { role: 'user', content: text },
+      ];
+      const apiMessages = raw.filter(
+        (msg, i) => i === 0 || msg.role !== raw[i - 1].role
+      );
+      addMessage(userMsg);
+      const response = await generateAgentResponse(resolvedAgentId, apiMessages, threadIdRef.current);
       const assistantMsg = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -34,34 +41,16 @@ export function useChat(agentId) {
       };
       addMessage(assistantMsg);
     } catch (err) {
-      addMessage({
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `Error: ${err.message ?? 'Request failed'}`,
-        timestamp: Date.now(),
-      });
+      console.error('[Studio Chat] generate failed:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  function dismiss(id) {
-    dismissWarning(id);
-    dismissSuggestion(id);
-  }
-
-  function runAutomation() {
-    send('Run the current automation');
-  }
-
   return {
     messages,
-    warnings,
-    suggestions,
     isLoading,
     send,
-    dismiss,
     clearChat,
-    runAutomation,
   };
 }

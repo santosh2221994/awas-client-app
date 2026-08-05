@@ -3,7 +3,7 @@ import { useSessionStore } from '../stores/useSessionStore';
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 15000,
+  timeout: 120000, // 2 min — local LLMs (gemma, llama) are slow to respond
   headers: {
     'Content-Type': 'application/json',
   },
