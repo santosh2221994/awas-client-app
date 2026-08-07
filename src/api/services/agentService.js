@@ -1,6 +1,12 @@
 import client from '../client';
 import { ENDPOINTS } from '../endpoints';
 
+// Agents with marketplace pricing — all others are Free
+const AGENT_PRICE_MAP = {
+  'deep-search-agent': '$19',
+  'browser-agent': '$29',
+};
+
 function getLocalAgents() {
   const custom = localStorage.getItem('custom_agents');
   const customList = custom ? JSON.parse(custom) : [];
@@ -41,7 +47,7 @@ export function listAgents() {
         const rawPrice = meta?.price ?? agent.metadata?.price ?? agent.price;
         const formattedPrice = (rawPrice !== undefined && rawPrice !== null && rawPrice !== 'Free' && rawPrice !== 0)
           ? `$${rawPrice}`
-          : 'Free';
+          : (AGENT_PRICE_MAP[id] ?? 'Free');
 
         return {
           id,

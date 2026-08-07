@@ -18,7 +18,6 @@ export default function CrewStudioDashboard() {
     const [activeTab, setActiveTab] = useState('All');
     const [mSearch, setMSearch] = useState('');
     const [mCategory, setMCategory] = useState('All');
-    const [mAgents, setMAgents] = useState([]);
     const [mLoading, setMLoading] = useState(true);
     const [mError, setMError] = useState(null);
 
@@ -46,7 +45,6 @@ export default function CrewStudioDashboard() {
             try {
                 const data = await listAgents();
                 setAgents(Array.isArray(data) ? data : []);
-                setMAgents((Array.isArray(data) ? data : []).filter((a) => a.price && a.price !== 'Free'));
             } catch (err) {
                 setError(err.message || 'Unable to load agents.');
                 setMError(err.message || 'Unable to load marketplace agents.');
@@ -58,30 +56,27 @@ export default function CrewStudioDashboard() {
         fetchAgentsList();
     }, [myListedAgents]);
 
-    const cleanPrice = (p) => parseFloat(p?.toString().replace(/[^0-9.]/g, '')) || 0;
-
     const hasPricing = (agent) => {
         const p = agent.price;
-        return p !== undefined && p !== null && p !== 'Free' && cleanPrice(p) > 0;
+        return p !== undefined && p !== null && p !== 'Free' && p !== '' && parseFloat(p?.toString().replace(/[^0-9.]/g, '')) > 0;
     };
 
-    const allMarketplaceAgents = [
-        ...mAgents,
-        ...myListedAgents.filter((a) => a.sellOnMarketplace),
-    ].filter((agent) => {
+    // Marketplace — agents WITH pricing
+    const allMarketplaceAgents = agents.filter((agent) => {
+        if (!hasPricing(agent)) return false;
         const q = mSearch.toLowerCase();
         const matches = agent.name?.toLowerCase().includes(q) || agent.description?.toLowerCase().includes(q);
-        const matchesCat = mCategory === 'All' || (mCategory === 'Premium' && agent.price !== 'Free') || agent.type === mCategory;
+        const matchesCat = mCategory === 'All' || (mCategory === 'Premium' && hasPricing(agent));
         return matches && matchesCat;
     });
 
-    // Recent Projects — agents with no price
+    // Recent Projects — agents WITHOUT pricing
     const recentAgents = agents.filter((agent) => {
         if (hasPricing(agent)) return false;
         const q = query.toLowerCase();
         const matches = agent.name?.toLowerCase().includes(q) || agent.description?.toLowerCase().includes(q);
-        if (activeTab === 'Mine') return matches && agent.id !== 'agent-2';
-        if (activeTab === 'Shared with me') return matches && agent.id === 'agent-2';
+        if (activeTab === 'Mine') return matches && agent.id?.startsWith('custom-');
+        if (activeTab === 'Shared with me') return matches && !agent.id?.startsWith('custom-');
         return matches;
     });
 
@@ -307,8 +302,12 @@ export default function CrewStudioDashboard() {
                                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
                                             <Bot className="w-5 h-5" />
                                         </div>
-                                        <span className="text-[10px] font-bold rounded-lg px-2 py-0.5 text-indigo-700 bg-indigo-50 border border-indigo-100">
-                                            {agent.price}
+                                        <span className={`text-[10px] font-bold rounded-lg px-2 py-0.5 border ${
+                                            hasPricing(agent)
+                                                ? 'text-indigo-700 bg-indigo-50 border-indigo-100'
+                                                : 'text-emerald-700 bg-emerald-50 border-emerald-100'
+                                        }`}>
+                                            {hasPricing(agent) ? agent.price : 'Free'}
                                         </span>
                                     </div>
                                     <h3 className="text-xs font-bold text-gray-800 mt-3.5 group-hover:text-purple-600 transition-colors">

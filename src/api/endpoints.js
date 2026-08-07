@@ -7,7 +7,7 @@ export const ENDPOINTS = {
   WORKFLOW_RUN: (workflowId) => `/ai/workflows/${workflowId}/run`,
   MEMORY_THREADS: '/ai/memory/threads',
   MEMORY_THREAD_MESSAGES: (threadId) => `/ai/memory/threads/${threadId}/messages`,
-  LOGS: '/logs',
+  LOGS: '/ai/logs',
   TOOLS: '/tools',
   AUTH_SIGNUP: '/auth/signup',
   AUTH_LOGIN: '/auth/login',
