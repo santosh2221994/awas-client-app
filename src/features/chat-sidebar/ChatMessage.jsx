@@ -1,8 +1,9 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
+import ReasoningPanel from './ReasoningPanel';
 
-export default function ChatMessage({ message }) {
-  const { role, content, type, timestamp } = message;
+export default function ChatMessage({ message, isThinking = false }) {
+  const { role, content, type, timestamp, reasoning } = message;
   const isUser = role === 'user';
   const isCode = type === 'code';
 
@@ -23,6 +24,7 @@ export default function ChatMessage({ message }) {
   return (
     <div className={cn("flex w-full mb-3", isUser ? "justify-end" : "justify-start")}>
       <div className="flex flex-col max-w-[85%]">
+        {!isUser && <ReasoningPanel isThinking={isThinking} reasoning={reasoning} />}
         {isCode ? (
           <div className="font-mono text-xs bg-gray-800 text-emerald-400 rounded-xl px-4 py-3 shadow-sm border border-gray-700/50 whitespace-pre overflow-x-auto scrollbar-thin">
             {content}

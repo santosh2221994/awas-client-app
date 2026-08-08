@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw, Info, Share2, ArrowUp, Link2, Clock, Copy, MoreHorizontal, Terminal, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw, Info, Share2, ArrowUp, Link2, Clock, Copy, MoreHorizontal, Terminal, Settings, Brain } from 'lucide-react';
 import { getAgentById, generateAgentResponse, getAgentThreads, getThreadMessages, getLogs } from '../../api/services/agentService';
 import Button from '../../components/Button';
 import { useUIStore } from '../../stores/useUIStore';
@@ -445,6 +445,38 @@ function ContextTab({ agentId }) {
   );
 }
 
+function DarkReasoningPanel({ isThinking = false, reasoning = '' }) {
+  const [open, setOpen] = useState(true);
+  if (!isThinking && !reasoning) return null;
+  return (
+    <div className="mb-2 rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden text-xs max-w-[80%]">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-zinc-500 hover:bg-zinc-800/40 transition-colors"
+      >
+        <Brain className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+        <span className="font-semibold text-zinc-400 flex-1 text-left">
+          {isThinking ? 'Thinking...' : 'Reasoning'}
+        </span>
+        {isThinking ? (
+          <span className="flex items-center gap-0.5">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </span>
+        ) : (
+          open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
+        )}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 text-zinc-500 italic border-t border-zinc-800 leading-relaxed">
+          {isThinking ? 'Processing your request...' : reasoning}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AgentDetail() {
   const { selectedAgentId, clearSelectedAgentId } = useUIStore();
   const [agent, setAgent] = useState(null);
@@ -457,6 +489,7 @@ export default function AgentDetail() {
   const [message, setMessage] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [threadId, setThreadId] = useState(() => crypto.randomUUID());
   const [threads, setThreads] = useState([]);
   const [threadLoading, setThreadLoading] = useState(false);
@@ -654,6 +687,7 @@ export default function AgentDetail() {
     setChatMessages((prev) => [...prev, userMessage]);
     setMessage('');
     setIsSending(true);
+    setIsThinking(true);
 
     try {
       // Prepend version-specific instructions to simulate testing modified prompts
@@ -679,6 +713,7 @@ export default function AgentDetail() {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: err.message || 'Unable to generate a response.' }]);
     } finally {
       setIsSending(false);
+      setIsThinking(false);
     }
   };
 
@@ -700,11 +735,14 @@ export default function AgentDetail() {
                 {threadLoading
                   ? <div className="text-sm text-zinc-550">Loading messages...</div>
                   : chatMessages.map((chat, index) => (
-                    <div key={`${chat.role}-${index}`} className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-gray-900 text-gray-200 border border-gray-800'}`}>
-                      {chat.content}
+                    <div key={`${chat.role}-${index}`}>
+                      {chat.role === 'assistant' && <DarkReasoningPanel isThinking={false} />}
+                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-gray-900 text-gray-200 border border-gray-800'}`}>
+                        {chat.content}
+                      </div>
                     </div>
                   ))}
-                {!threadLoading && isSending && <div className="text-sm text-zinc-550">Thinking...</div>}
+                {!threadLoading && isThinking && <DarkReasoningPanel isThinking={true} />}
               </div>
             )}
           </div>
@@ -836,11 +874,14 @@ export default function AgentDetail() {
                       {threadLoading
                         ? <div className="text-sm text-zinc-550">Loading messages...</div>
                         : chatMessages.map((chat, index) => (
-                          <div key={`${chat.role}-${index}`} className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-650 bg-blue-600 text-white' : 'bg-zinc-900 border border-zinc-850 text-zinc-200'}`}>
-                            {chat.content}
+                          <div key={`${chat.role}-${index}`}>
+                            {chat.role === 'assistant' && <DarkReasoningPanel isThinking={false} />}
+                            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-650 bg-blue-600 text-white' : 'bg-zinc-900 border border-zinc-850 text-zinc-200'}`}>
+                              {chat.content}
+                            </div>
                           </div>
                         ))}
-                      {!threadLoading && isSending && <div className="text-sm text-zinc-550">Thinking...</div>}
+                      {!threadLoading && isThinking && <DarkReasoningPanel isThinking={true} />}
                     </div>
                   )}
                 </div>

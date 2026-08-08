@@ -8,6 +8,7 @@ import ChatInput from './ChatInput';
 
 export default function ChatSidebar() {
   const messages = useChatStore((s) => s.messages);
+  const isLoading = useChatStore((s) => s.isLoading);
   const selectedAgentId = useUIStore((s) => s.selectedAgentId);
   const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
   const activeAgentId = selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
@@ -55,9 +56,20 @@ export default function ChatSidebar() {
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+            {messages.map((message, idx) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                isThinking={false}
+              />
             ))}
+            {isLoading && (
+              <ChatMessage
+                key="thinking"
+                message={{ id: 'thinking', role: 'assistant', content: '' }}
+                isThinking={true}
+              />
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}
