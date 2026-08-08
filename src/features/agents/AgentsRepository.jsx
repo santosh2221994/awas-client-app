@@ -37,10 +37,7 @@ function AgentRow({ agent }) {
         <Button
           variant="secondary"
           size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleSelectAgent();
-          }}
+          onClick={(e) => { e.stopPropagation(); handleSelectAgent(); }}
         >
           <LayoutTemplate className="w-3.5 h-3.5" />
           View Agent
@@ -69,7 +66,6 @@ export default function AgentsRepository() {
         setLoading(false);
       }
     }
-
     fetchAgents();
   }, []);
 
@@ -83,7 +79,7 @@ export default function AgentsRepository() {
   });
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden bg-gray-50">
+    <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 relative">
       <div className="h-full overflow-y-auto p-6">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -125,19 +121,16 @@ export default function AgentsRepository() {
                 Loading agents...
               </div>
             )}
-
             {error && (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
                 {error}
               </div>
             )}
-
             {!loading && !error && filteredAgents.length === 0 && (
               <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-gray-500">
                 No agents found. Try adjusting your search.
               </div>
             )}
-
             {filteredAgents.map((agent) => (
               <AgentRow key={agent.id || agent.name} agent={agent} />
             ))}

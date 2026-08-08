@@ -89,13 +89,10 @@ export default function App() {
 
     if (activeNavItem === 'crew-studio' && !selectedCrewAgentId) {
       return (
-        <>
-          <ChatSidebar />
-          <main className="flex-1 relative overflow-hidden flex h-full">
-            <CrewStudioDashboard />
-            <RightPanel />
-          </main>
-        </>
+        <main className="flex-1 relative overflow-hidden flex h-full">
+          <CrewStudioDashboard />
+          <RightPanel />
+        </main>
       );
     }
 

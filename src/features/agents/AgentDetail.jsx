@@ -494,6 +494,22 @@ export default function AgentDetail() {
   const [threads, setThreads] = useState([]);
   const [threadLoading, setThreadLoading] = useState(false);
 
+  const chatStorageKey = selectedAgentId ? `agent_chat_${selectedAgentId}` : null;
+
+  // Load persisted threads + messages from localStorage
+  function loadPersistedChat(agentId) {
+    try {
+      const raw = localStorage.getItem(`agent_chat_${agentId}`);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+
+  function savePersistedChat(agentId, data) {
+    try {
+      localStorage.setItem(`agent_chat_${agentId}`, JSON.stringify(data));
+    } catch {}
+  }
+
   // Versions and local storage tracking states
   const [versions, setVersions] = useState([]);
   const [activeVersionId, setActiveVersionId] = useState('');
@@ -517,7 +533,20 @@ export default function AgentDetail() {
         const data = await getAgentById(selectedAgentId);
         setAgent(data);
         const agentThreads = await getAgentThreads(selectedAgentId);
-        setThreads(agentThreads);
+        // Merge API threads with locally persisted threads (local ones first)
+        const persisted = loadPersistedChat(selectedAgentId);
+        const localThreads = persisted?.threads || [];
+        const apiIds = new Set(agentThreads.map((t) => t.id));
+        const mergedThreads = [...localThreads.filter((t) => !apiIds.has(t.id)), ...agentThreads];
+        setThreads(mergedThreads);
+        // Restore last active thread messages
+        if (persisted?.activeThreadId && persisted?.messagesByThread?.[persisted.activeThreadId]) {
+          setThreadId(persisted.activeThreadId);
+          setChatMessages(persisted.messagesByThread[persisted.activeThreadId]);
+        } else {
+          setChatMessages([]);
+          setThreadId(crypto.randomUUID());
+        }
 
         // Retrieve versions or mock default
         const stored = localStorage.getItem(`agent_versions_${selectedAgentId}`);
@@ -568,9 +597,30 @@ export default function AgentDetail() {
 
   if (!selectedAgentId) return null;
 
+  // Persist threads + messages to localStorage whenever they change
+  useEffect(() => {
+    if (!selectedAgentId || threads.length === 0) return;
+    const persisted = loadPersistedChat(selectedAgentId) || {};
+    const messagesByThread = persisted.messagesByThread || {};
+    if (chatMessages.length > 0) messagesByThread[threadId] = chatMessages;
+    savePersistedChat(selectedAgentId, {
+      threads: threads.filter((t) => !t.updatedAt), // only local threads
+      activeThreadId: threadId,
+      messagesByThread,
+    });
+  }, [threads, chatMessages, threadId, selectedAgentId]);
+
   async function handleSelectThread(thread) {
     setThreadId(thread.id);
     setChatMessages([]);
+    // Local thread — restore from localStorage
+    if (!thread.updatedAt) {
+      const persisted = loadPersistedChat(selectedAgentId);
+      const saved = persisted?.messagesByThread?.[thread.id] || [];
+      setChatMessages(saved);
+      return;
+    }
+    // API thread — fetch from server
     setThreadLoading(true);
     try {
       const msgs = await getThreadMessages(thread.id);
@@ -805,8 +855,20 @@ export default function AgentDetail() {
             <div className="border-b border-[#141416]/50 p-4">
               <button
                 onClick={() => {
-                  setThreadId(crypto.randomUUID());
+                  const newId = crypto.randomUUID();
+                  const newThread = { id: newId, createdAt: new Date().toISOString() };
+                  setThreadId(newId);
                   setChatMessages([]);
+                  setThreads((prev) => {
+                    const updated = [newThread, ...prev];
+                    const persisted = loadPersistedChat(selectedAgentId) || {};
+                    savePersistedChat(selectedAgentId, {
+                      ...persisted,
+                      threads: updated.filter((t) => !t.updatedAt),
+                      activeThreadId: newId,
+                    });
+                    return updated;
+                  });
                 }}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-[#132A1C] text-[#4ADE80] border border-[#1b3b27]/30 hover:bg-[#1C3E29] transition"
               >

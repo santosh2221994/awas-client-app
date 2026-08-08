@@ -1,33 +1,77 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export const useChatStore = create((set) => ({
+const newSession = (label) => ({
+  id: `session-${Date.now()}`,
+  label: label || `Chat ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
   messages: [],
-  warnings: [],
-  suggestions: [],
-  isLoading: false,
+  createdAt: Date.now(),
+});
 
-  addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
+export const useChatStore = create(
+  persist(
+    (set, get) => {
+      const initial = newSession('New Chat');
+      return {
+        sessions: [initial],
+        activeSessionId: initial.id,
+        warnings: [],
+        suggestions: [],
+        isLoading: false,
 
-  setMessages: (messages) => set({ messages }),
+        addMessage: (message) =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId
+                ? { ...s, messages: [...s.messages, message] }
+                : s
+            ),
+          })),
 
-  addWarning: (warning) =>
-    set((state) => ({ warnings: [...state.warnings, warning] })),
+        setMessages: (messages) =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId ? { ...s, messages } : s
+            ),
+          })),
 
-  dismissWarning: (id) =>
-    set((state) => ({
-      warnings: state.warnings.filter((w) => w.id !== id),
-    })),
+        newChat: () => {
+          const session = newSession();
+          set((state) => ({ sessions: [session, ...state.sessions], activeSessionId: session.id }));
+        },
 
-  addSuggestion: (suggestion) =>
-    set((state) => ({ suggestions: [...state.suggestions, suggestion] })),
+        switchSession: (id) => set({ activeSessionId: id }),
 
-  dismissSuggestion: (id) =>
-    set((state) => ({
-      suggestions: state.suggestions.filter((s) => s.id !== id),
-    })),
+        addWarning: (warning) =>
+          set((state) => ({ warnings: [...state.warnings, warning] })),
 
-  setLoading: (isLoading) => set({ isLoading }),
+        dismissWarning: (id) =>
+          set((state) => ({ warnings: state.warnings.filter((w) => w.id !== id) })),
 
-  clearChat: () => set({ messages: [], warnings: [], suggestions: [] }),
-}));
+        addSuggestion: (suggestion) =>
+          set((state) => ({ suggestions: [...state.suggestions, suggestion] })),
+
+        dismissSuggestion: (id) =>
+          set((state) => ({ suggestions: state.suggestions.filter((s) => s.id !== id) })),
+
+        setLoading: (isLoading) => set({ isLoading }),
+
+        clearChat: () =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId ? { ...s, messages: [] } : s
+            ),
+            warnings: [],
+            suggestions: [],
+          })),
+      };
+    },
+    {
+      name: 'awas-chat-sessions',
+      partialize: (state) => ({
+        sessions: state.sessions,
+        activeSessionId: state.activeSessionId,
+      }),
+    }
+  )
+);

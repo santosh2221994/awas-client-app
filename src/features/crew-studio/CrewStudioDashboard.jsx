@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import {
     Search, Plus, Bot, ChevronRight,
     PanelRightOpen, PanelRightClose, ShoppingBag,
-    Star, X
+    Star, X, MessageSquare
 } from 'lucide-react';
 import { listAgents } from '../../api/services/agentService';
 import { useUIStore } from '../../stores/useUIStore';
 import Button from '../../components/Button';
+import AgentChatPanel from '../chat-sidebar/AgentChatPanel';
 
 export default function CrewStudioDashboard() {
     const { setSelectedCrewAgentId, isRightPanelOpen, toggleRightPanel } = useUIStore();
+    const [chatAgent, setChatAgent] = useState(null);
 
     const [agents, setAgents] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -112,7 +114,7 @@ export default function CrewStudioDashboard() {
     };
 
     return (
-        <div className="flex-1 bg-slate-50/50 overflow-y-auto">
+        <div className="flex-1 bg-slate-50/50 overflow-y-auto relative">
             <div className="max-w-6xl mx-auto px-8 py-8 space-y-10 pb-16">
 
                 {/* Banner */}
@@ -208,7 +210,7 @@ export default function CrewStudioDashboard() {
                             <div
                                 key={agent.id}
                                 onClick={() => setSelectedCrewAgentId(agent.id)}
-                                className="group cursor-pointer border rounded-2xl p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] flex flex-col justify-between min-h-[175px] flex-shrink-0 w-[350px] bg-white border-gray-200 hover:border-indigo-200"
+                                className="group cursor-pointer border rounded-2xl p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] flex flex-col justify-between min-h-[175px] flex-shrink-0 w-[350px] bg-white border-gray-200 hover:border-indigo-200 relative"
                             >
                                 <div>
                                     <div className="flex items-start justify-between">
@@ -228,13 +230,22 @@ export default function CrewStudioDashboard() {
                                 </div>
                                 <div className="flex items-center justify-between border-t border-gray-100 pt-3.5 mt-4">
                                     <span className="text-[10px] text-gray-400 select-none">Modified 17 days ago</span>
-                                    <button
-                                        className="text-[11px] font-bold text-indigo-600 transition-colors flex items-center gap-0.5"
-                                        onClick={(e) => { e.stopPropagation(); setSelectedCrewAgentId(agent.id); }}
-                                    >
-                                        <span>Edit Schema</span>
-                                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            className="text-[11px] font-bold text-indigo-600 transition-colors flex items-center gap-0.5"
+                                            onClick={(e) => { e.stopPropagation(); setSelectedCrewAgentId(agent.id); }}
+                                        >
+                                            <span>Edit Schema</span>
+                                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                                        </button>
+                                        <button
+                                            className="text-[11px] font-bold text-indigo-600 transition-colors flex items-center gap-0.5 border border-indigo-100 rounded-lg px-2 py-0.5 hover:bg-indigo-50"
+                                            onClick={(e) => { e.stopPropagation(); setChatAgent(agent); }}
+                                        >
+                                            <MessageSquare className="w-3 h-3" />
+                                            <span>Chat</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -295,7 +306,8 @@ export default function CrewStudioDashboard() {
                         {!mLoading && !mError && allMarketplaceAgents.map((agent) => (
                             <div
                                 key={agent.id}
-                                className="group flex flex-col justify-between bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                                className="group flex flex-col justify-between bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
+                                onClick={() => setChatAgent(agent)}
                             >
                                 <div>
                                     <div className="flex items-center justify-between">
@@ -331,9 +343,9 @@ export default function CrewStudioDashboard() {
                                     </span>
                                     <button
                                         className="px-3 py-1 text-[11px] font-bold rounded-lg border bg-purple-600 text-white border-purple-600 hover:bg-purple-700 transition-all"
-                                        onClick={() => setSelectedCrewAgentId(agent.id)}
+                                        onClick={(e) => { e.stopPropagation(); setChatAgent(agent); }}
                                     >
-                                        Use Agent
+                                        Chat with Agent
                                     </button>
                                 </div>
                             </div>
@@ -342,6 +354,12 @@ export default function CrewStudioDashboard() {
                 </div>
 
             </div>
+
+            {chatAgent && (
+                <div className="absolute top-0 right-0 h-full z-30 shadow-xl">
+                    <AgentChatPanel agent={chatAgent} onClose={() => setChatAgent(null)} />
+                </div>
+            )}
 
             {/* Create Agent Modal */}
             {showCreateModal && (

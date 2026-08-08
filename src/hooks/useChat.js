@@ -3,7 +3,7 @@ import { useChatStore } from '../stores/useChatStore';
 import { generateAgentResponse } from '../api/services/chatService';
 
 export function useChat(agentId) {
-  const messages = useChatStore((s) => s.messages);
+  const messages = useChatStore((s) => s.sessions.find((sess) => sess.id === s.activeSessionId)?.messages ?? []);
   const isLoading = useChatStore((s) => s.isLoading);
   const addMessage = useChatStore((s) => s.addMessage);
   const setLoading = useChatStore((s) => s.setLoading);
@@ -23,7 +23,8 @@ export function useChat(agentId) {
     setLoading(true);
 
     try {
-      const history = useChatStore.getState().messages;
+      const { sessions, activeSessionId } = useChatStore.getState();
+      const history = sessions.find((s) => s.id === activeSessionId)?.messages ?? [];
       const raw = [
         ...history.map(({ role, content }) => ({ role, content })),
         { role: 'user', content: text },
