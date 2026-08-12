@@ -1,20 +1,15 @@
+import { streamAgentGenerate } from './agentService';
 import client from '../client';
 import { ENDPOINTS } from '../endpoints';
 
-export function generateAgentResponse(agentId, messages, threadId) {
+/**
+ * Streaming chat service entry point.
+ * Delegates to streamAgentGenerate with caller-provided callbacks.
+ */
+export function streamChatResponse(agentId, messages, threadId, callbacks = {}) {
   const resolvedAgentId = agentId || 'studio-chat-agent';
   const resolvedThreadId = threadId || crypto.randomUUID();
-
-  return client.post(
-    ENDPOINTS.AGENT_GENERATE(resolvedAgentId),
-    {
-      messages,
-      memory: {
-        thread: resolvedThreadId,
-        resource: 'default-user',
-      },
-    }
-  );
+  return streamAgentGenerate(resolvedAgentId, messages, resolvedThreadId, callbacks);
 }
 
 export function getMemoryThreads() {

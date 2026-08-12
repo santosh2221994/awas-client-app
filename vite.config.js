@@ -9,9 +9,19 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        timeout: 120000,
-        proxyTimeout: 120000,
+        timeout: 300000,    // 5 min for long agent streams
+        proxyTimeout: 300000,
+        // Disable response buffering so SSE chunks reach the browser immediately
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            const ct = proxyRes.headers['content-type'] ?? '';
+            if (ct.includes('text/event-stream')) {
+              proxyRes.headers['x-accel-buffering'] = 'no';
+            }
+          });
+        },
       },
     },
   },
 })
+

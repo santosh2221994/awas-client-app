@@ -116,13 +116,15 @@ export default function ChatSidebar() {
             {messages.map((message) => (
               <ChatMessage key={message.id} message={message} isThinking={false} />
             ))}
-            {isLoading && (
+            {/* Only show global thinking bubble when no streaming message is already visible */}
+            {isLoading && !messages[messages.length - 1]?.isStreaming && (
               <ChatMessage key="thinking" message={{ id: 'thinking', role: 'assistant', content: '' }} isThinking={true} />
             )}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
+
 
       {/* Chat Input */}
       <ChatInput onSend={send} />

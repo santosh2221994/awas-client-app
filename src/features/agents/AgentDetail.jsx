@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw, Info, Share2, ArrowUp, Link2, Clock, Copy, MoreHorizontal, Terminal, Settings, Brain } from 'lucide-react';
-import { getAgentById, generateAgentResponse, getAgentThreads, getThreadMessages, getLogs } from '../../api/services/agentService';
+import { ArrowLeft, Plus, Circle, Upload, Mic, Send, ChevronDown, ChevronRight, MessageSquare, RefreshCw, Info, Share2, ArrowUp, Link2, Clock, Copy, MoreHorizontal, Terminal, Settings, Brain, Zap } from 'lucide-react';
+import { getAgentById, generateAgentResponse, streamAgentGenerate, getAgentThreads, getThreadMessages, getLogs } from '../../api/services/agentService';
 import Button from '../../components/Button';
 import { useUIStore } from '../../stores/useUIStore';
 
@@ -29,6 +29,79 @@ function CollapsibleSection({ title, count, children, defaultOpen = true, icon: 
         </div>
       </button>
       {open && <div className="border-t border-zinc-850 bg-[#070708]/30 px-1 py-1">{children}</div>}
+    </div>
+  );
+}
+
+function ModelStatusPill({ status, usage }) {
+  if (!status && !usage) return null;
+
+  const totalTokens = usage ? (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0) : null;
+
+  return (
+    <div className="flex items-center gap-2 mt-1.5 px-1 select-none">
+      {/* Model Status */}
+      {status === 'thinking' && (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-800/50">
+          <Brain className="w-3 h-3 text-indigo-400 animate-pulse" />
+          Thinking...
+        </span>
+      )}
+      {status === 'generating' && (
+        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-950/80 text-amber-300 border border-amber-800/50">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+          Generating...
+        </span>
+      )}
+      {status === 'generated' && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">
+          ✓ Generated
+        </span>
+      )}
+
+      {/* Token Usage */}
+      {totalTokens !== null && (
+        <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2 py-0.5 rounded-md">
+          <Zap className="w-3 h-3 text-amber-400" />
+          {totalTokens.toLocaleString()} tokens
+          <span className="text-zinc-600">·</span>
+          <span className="text-indigo-400">P: {(usage.promptTokens ?? 0).toLocaleString()}</span>
+          <span className="text-zinc-600">/</span>
+          <span className="text-emerald-400">C: {(usage.completionTokens ?? 0).toLocaleString()}</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+function DarkReasoningPanel({ isThinking = false, reasoning = '' }) {
+  const [open, setOpen] = useState(true);
+  if (!isThinking && !reasoning) return null;
+  return (
+    <div className="mb-2 rounded-xl border border-indigo-900/40 bg-zinc-900/80 overflow-hidden text-xs max-w-[80%]">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-zinc-400 hover:bg-zinc-800/40 transition-colors"
+      >
+        <Brain className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+        <span className="font-semibold text-indigo-300 flex-1 text-left">
+          {isThinking ? 'Thinking...' : 'Reasoning'}
+        </span>
+        {isThinking ? (
+          <span className="flex items-center gap-0.5">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+            ))}
+          </span>
+        ) : (
+          open ? <ChevronDown className="w-3.5 h-3.5 text-zinc-500" /> : <ChevronRight className="w-3.5 h-3.5 text-zinc-500" />
+        )}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 pt-1 text-zinc-400 border-t border-zinc-800/80 leading-relaxed whitespace-pre-wrap">
+          {reasoning || 'Processing your request...'}
+        </div>
+      )}
     </div>
   );
 }
@@ -445,39 +518,9 @@ function ContextTab({ agentId }) {
   );
 }
 
-function DarkReasoningPanel({ isThinking = false, reasoning = '' }) {
-  const [open, setOpen] = useState(true);
-  if (!isThinking && !reasoning) return null;
-  return (
-    <div className="mb-2 rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden text-xs max-w-[80%]">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-zinc-500 hover:bg-zinc-800/40 transition-colors"
-      >
-        <Brain className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-        <span className="font-semibold text-zinc-400 flex-1 text-left">
-          {isThinking ? 'Thinking...' : 'Reasoning'}
-        </span>
-        {isThinking ? (
-          <span className="flex items-center gap-0.5">
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="w-1 h-1 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-            ))}
-          </span>
-        ) : (
-          open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />
-        )}
-      </button>
-      {open && (
-        <div className="px-3 pb-3 pt-1 text-zinc-500 italic border-t border-zinc-800 leading-relaxed">
-          {isThinking ? 'Processing your request...' : reasoning}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function AgentDetail() {
+
   const { selectedAgentId, clearSelectedAgentId } = useUIStore();
   const [agent, setAgent] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -728,16 +771,20 @@ export default function AgentDetail() {
     return '';
   };
 
+  const [modelStatus, setModelStatus] = useState(null);
+
   const handleSendMessage = async () => {
     const text = message.trim();
     if (!text || !selectedAgentId || isSending) return;
 
     const userMessage = { role: 'user', content: text };
+    const assistantMsgId = `msg-${Date.now()}`;
 
     setChatMessages((prev) => [...prev, userMessage]);
     setMessage('');
     setIsSending(true);
     setIsThinking(true);
+    setModelStatus('thinking');
 
     try {
       // Prepend version-specific instructions to simulate testing modified prompts
@@ -755,12 +802,77 @@ export default function AgentDetail() {
       formattedHistory.push(userMessage);
       msgsToSend.push(...formattedHistory);
 
-      const response = await generateAgentResponse(selectedAgentId, msgsToSend, threadId);
-      const assistantContent = extractAssistantText(response) || 'Sorry, I could not generate a response.';
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: assistantContent }]);
+      // Add empty streaming assistant message
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: '',
+          reasoning: '',
+          usage: null,
+          isStreaming: true,
+          status: 'thinking',
+        },
+      ]);
+
+      await streamAgentGenerate(selectedAgentId, msgsToSend, threadId, {
+        onReasoning: (reasoningChunk) => {
+          setIsThinking(true);
+          setModelStatus('thinking');
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? { ...m, reasoning: (m.reasoning || '') + reasoningChunk, status: 'thinking' }
+                : m
+            )
+          );
+        },
+        onToken: (tokenChunk) => {
+          setIsThinking(false);
+          setModelStatus('generating');
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? { ...m, content: (m.content || '') + tokenChunk, status: 'generating' }
+                : m
+            )
+          );
+        },
+        onUsage: (usage) => {
+          setChatMessages((prev) =>
+            prev.map((m) => (m.id === assistantMsgId ? { ...m, usage } : m))
+          );
+        },
+        onDone: () => {
+          setIsThinking(false);
+          setModelStatus('generated');
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId ? { ...m, isStreaming: false, status: 'generated' } : m
+            )
+          );
+        },
+        onError: (err) => {
+          console.error('Agent streaming response failed', err);
+          setIsThinking(false);
+          setModelStatus('error');
+          setChatMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? {
+                    ...m,
+                    content: err.message || 'Unable to generate a response.',
+                    isStreaming: false,
+                    status: 'error',
+                  }
+                : m
+            )
+          );
+        },
+      });
     } catch (err) {
       console.error('Agent response failed', err);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: err.message || 'Unable to generate a response.' }]);
     } finally {
       setIsSending(false);
       setIsThinking(false);
@@ -785,18 +897,38 @@ export default function AgentDetail() {
                 {threadLoading
                   ? <div className="text-sm text-zinc-550">Loading messages...</div>
                   : chatMessages.map((chat, index) => (
-                    <div key={`${chat.role}-${index}`}>
-                      {chat.role === 'assistant' && <DarkReasoningPanel isThinking={false} />}
-                      <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-gray-900 text-gray-200 border border-gray-800'}`}>
+                    <div key={chat.id || `${chat.role}-${index}`} className="mb-3">
+                      {chat.role === 'assistant' && (
+                        <DarkReasoningPanel
+                          isThinking={chat.isStreaming && !chat.content && !chat.reasoning}
+                          reasoning={chat.reasoning}
+                        />
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
+                          chat.role === 'user'
+                            ? 'ml-auto bg-blue-600 text-white'
+                            : 'bg-zinc-900 border border-zinc-850 text-zinc-200'
+                        }`}
+                      >
                         {chat.content}
+                        {chat.role === 'assistant' && chat.isStreaming && (
+                          <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
+                        )}
                       </div>
+                      {chat.role === 'assistant' && (
+                        <ModelStatusPill
+                          status={chat.status || (chat.isStreaming ? (chat.content ? 'generating' : 'thinking') : 'generated')}
+                          usage={chat.usage}
+                        />
+                      )}
                     </div>
                   ))}
-                {!threadLoading && isThinking && <DarkReasoningPanel isThinking={true} />}
               </div>
             )}
           </div>
         );
+
       case 'Evaluate':
         return <EvaluateTab agentId={selectedAgentId} />;
       case 'Review':
@@ -936,14 +1068,34 @@ export default function AgentDetail() {
                       {threadLoading
                         ? <div className="text-sm text-zinc-550">Loading messages...</div>
                         : chatMessages.map((chat, index) => (
-                          <div key={`${chat.role}-${index}`}>
-                            {chat.role === 'assistant' && <DarkReasoningPanel isThinking={false} />}
-                            <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${chat.role === 'user' ? 'ml-auto bg-blue-650 bg-blue-600 text-white' : 'bg-zinc-900 border border-zinc-850 text-zinc-200'}`}>
-                              {chat.content}
+                            <div key={chat.id || `${chat.role}-${index}`} className="mb-3">
+                              {chat.role === 'assistant' && (
+                                <DarkReasoningPanel
+                                  isThinking={chat.isStreaming && !chat.content && !chat.reasoning}
+                                  reasoning={chat.reasoning}
+                                />
+                              )}
+                              <div
+                                className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
+                                  chat.role === 'user'
+                                    ? 'ml-auto bg-blue-600 text-white'
+                                    : 'bg-zinc-900 border border-zinc-850 text-zinc-200'
+                                }`}
+                              >
+                                {chat.content}
+                                {chat.role === 'assistant' && chat.isStreaming && (
+                                  <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
+                                )}
+                              </div>
+                              {chat.role === 'assistant' && (
+                                <ModelStatusPill
+                                  status={chat.status || (chat.isStreaming ? (chat.content ? 'generating' : 'thinking') : 'generated')}
+                                  usage={chat.usage}
+                                />
+                              )}
                             </div>
-                          </div>
-                        ))}
-                      {!threadLoading && isThinking && <DarkReasoningPanel isThinking={true} />}
+                          ))}
+
                     </div>
                   )}
                 </div>

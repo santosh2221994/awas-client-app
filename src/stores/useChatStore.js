@@ -18,6 +18,7 @@ export const useChatStore = create(
         warnings: [],
         suggestions: [],
         isLoading: false,
+        streamingMessageId: null, // tracks the in-flight assistant message id
 
         addMessage: (message) =>
           set((state) => ({
@@ -32,6 +33,61 @@ export const useChatStore = create(
           set((state) => ({
             sessions: state.sessions.map((s) =>
               s.id === state.activeSessionId ? { ...s, messages } : s
+            ),
+          })),
+
+        /**
+         * Append a token chunk to an in-flight assistant message content.
+         */
+        updateMessageContent: (messageId, textChunk) =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId
+                ? {
+                    ...s,
+                    messages: s.messages.map((m) =>
+                      m.id === messageId
+                        ? { ...m, content: (m.content ?? '') + textChunk }
+                        : m
+                    ),
+                  }
+                : s
+            ),
+          })),
+
+        /**
+         * Append a reasoning/thinking chunk to an in-flight assistant message.
+         */
+        updateMessageReasoning: (messageId, reasoningChunk) =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId
+                ? {
+                    ...s,
+                    messages: s.messages.map((m) =>
+                      m.id === messageId
+                        ? { ...m, reasoning: (m.reasoning ?? '') + reasoningChunk }
+                        : m
+                    ),
+                  }
+                : s
+            ),
+          })),
+
+        /**
+         * Stamp token usage onto a completed assistant message.
+         */
+        setMessageUsage: (messageId, usage) =>
+          set((state) => ({
+            sessions: state.sessions.map((s) =>
+              s.id === state.activeSessionId
+                ? {
+                    ...s,
+                    messages: s.messages.map((m) =>
+                      m.id === messageId ? { ...m, usage } : m
+                    ),
+                  }
+                : s
             ),
           })),
 
@@ -55,6 +111,8 @@ export const useChatStore = create(
           set((state) => ({ suggestions: state.suggestions.filter((s) => s.id !== id) })),
 
         setLoading: (isLoading) => set({ isLoading }),
+
+        setStreamingMessageId: (id) => set({ streamingMessageId: id }),
 
         clearChat: () =>
           set((state) => ({

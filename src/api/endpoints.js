@@ -12,5 +12,4 @@ export const ENDPOINTS = {
   AUTH_SIGNUP: '/auth/signup',
   AUTH_LOGIN: '/auth/login',
   AUTH_PROFILE: '/auth/profile',
-  AUTH_AGENTS: '/auth/agents',
 };
