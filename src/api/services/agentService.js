@@ -143,6 +143,7 @@ export function generateAgentResponse(agentId, messages, threadId) {
  */
 export async function streamAgentGenerate(agentId, messages, threadId, callbacks = {}) {
   const { onToken, onReasoning, onUsage, onDone, onError } = callbacks;
+  const startTime = Date.now();
 
   const token = useSessionStore.getState().token;
   // Bypass Vite proxy for streaming — call NestJS backend directly so SSE
@@ -191,6 +192,7 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
         onUsage?.({
           promptTokens: usage.inputTokens ?? usage.promptTokens ?? 0,
           completionTokens: usage.outputTokens ?? usage.completionTokens ?? 0,
+          duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
         });
       }
       onDone?.();
@@ -336,10 +338,14 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
             if (reasoning) onReasoning?.(reasoning);
           } else if (evtType === 'finish' || evtType === 'done' || evtType === 'complete' || evtType === 'step-finish') {
             const usage = p.usage ?? parsedJson.usage ?? parsedJson.totalUsage;
+            const finishReason = p.finishReason ?? parsedJson.finishReason ?? 'stop';
             if (usage) {
               onUsage?.({
                 promptTokens: usage.promptTokens ?? usage.inputTokens ?? usage.prompt_tokens ?? 0,
                 completionTokens: usage.completionTokens ?? usage.outputTokens ?? usage.completion_tokens ?? 0,
+                finishReason,
+                time: Date.now(),
+                duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
               });
             }
             if (evtType === 'finish' || evtType === 'done' || evtType === 'complete') {
@@ -356,10 +362,14 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
               onReasoning?.(reasoning);
             }
             const usage = p.usage ?? parsedJson.usage;
+            const finishReason = p.finishReason ?? parsedJson.finishReason ?? 'stop';
             if (usage) {
               onUsage?.({
                 promptTokens: usage.promptTokens ?? usage.inputTokens ?? usage.prompt_tokens ?? 0,
                 completionTokens: usage.completionTokens ?? usage.outputTokens ?? usage.completion_tokens ?? 0,
+                finishReason,
+                time: Date.now(),
+                duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
               });
             }
           }
@@ -403,9 +413,24 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
                   onUsage?.({
                     promptTokens: data.usage.promptTokens ?? data.usage.prompt_tokens ?? 0,
                     completionTokens: data.usage.completionTokens ?? data.usage.completion_tokens ?? 0,
+                    finishReason: data.finishReason ?? 'stop',
+                    time: Date.now(),
+                    duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
                   });
                 }
               } else if (prefix === 'd') {
+                try {
+                  const data = JSON.parse(payload);
+                  if (data?.usage) {
+                    onUsage?.({
+                      promptTokens: data.usage.promptTokens ?? data.usage.prompt_tokens ?? 0,
+                      completionTokens: data.usage.completionTokens ?? data.usage.completion_tokens ?? 0,
+                      finishReason: data.finishReason ?? 'stop',
+                      time: Date.now(),
+                      duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+                    });
+                  }
+                } catch {}
                 emitDone();
               }
             } catch {

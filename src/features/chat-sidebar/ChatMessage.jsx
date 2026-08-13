@@ -30,7 +30,7 @@ export default function ChatMessage({ message, isThinking = false }) {
   const totalTokens = usage ? (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0) : null;
 
   return (
-    <div className={cn('flex w-full mb-3', isUser ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex w-full mb-3 group', isUser ? 'justify-end' : 'justify-start')}>
       <div className="flex flex-col max-w-[85%]">
         {/* Reasoning / thinking panel for assistant messages */}
         {!isUser && (
@@ -41,7 +41,9 @@ export default function ChatMessage({ message, isThinking = false }) {
         )}
 
         {isCode ? (
-          <div className="font-mono text-xs bg-gray-800 text-emerald-400 rounded-xl px-4 py-3 shadow-sm border border-gray-700/50 whitespace-pre overflow-x-auto scrollbar-thin">
+          <div 
+            className="font-mono text-xs bg-gray-800 text-emerald-400 rounded-xl px-4 py-3 shadow-sm border border-gray-700/50 whitespace-pre overflow-x-auto scrollbar-thin"
+          >
             {content}
           </div>
         ) : (
@@ -63,21 +65,35 @@ export default function ChatMessage({ message, isThinking = false }) {
 
         {/* Token usage pill — shown below completed assistant messages */}
         {!isUser && totalTokens !== null && !isStreaming && (
-          <div className="flex items-center gap-1 mt-1 px-1">
+          <div className="flex items-center gap-1.5 mt-1 px-1 select-none">
             <Zap className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[10px] text-gray-400 font-mono">
               {totalTokens.toLocaleString()} tokens
-              <span className="text-gray-300 mx-1">·</span>
-              <span className="text-indigo-400">P: {(usage.promptTokens ?? 0).toLocaleString()}</span>
-              <span className="text-gray-300 mx-1">/</span>
-              <span className="text-emerald-400">C: {(usage.completionTokens ?? 0).toLocaleString()}</span>
             </span>
+            {usage?.duration && (
+              <span className="text-[10px] text-gray-500 font-mono ml-0.5">
+                {usage.duration}
+              </span>
+            )}
+            {usage && (
+              <span className="text-[10px] font-mono text-gray-500 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                P: {(usage.promptTokens ?? 0).toLocaleString()} / C: {(usage.completionTokens ?? 0).toLocaleString()}
+              </span>
+            )}
           </div>
         )}
 
-        <span className={cn('text-[10px] text-gray-400 mt-0.5 px-1', isUser ? 'text-right' : 'text-left')}>
-          {formattedTime}
-        </span>
+        {isUser && formattedTime && (
+          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-right">
+            {formattedTime}
+          </span>
+        )}
+
+        {!isUser && totalTokens === null && formattedTime && (
+          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-left">
+            {formattedTime}
+          </span>
+        )}
       </div>
     </div>
   );

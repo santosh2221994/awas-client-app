@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useChatStore } from '../stores/useChatStore';
 import { streamChatResponse } from '../api/services/chatService';
+import { getThreadMessages } from '../api/services/agentService';
 
 export function useChat(agentId) {
   const resolvedAgentId = agentId || 'studio-chat-agent';
@@ -90,20 +91,47 @@ export function useChat(agentId) {
         onUsage: (usage) => {
           setMessageUsage(assistantMsgId, usage);
         },
-        onDone: () => {
-          // Mark streaming as complete by removing the isStreaming flag
-          useChatStore.setState((state) => ({
-            sessions: state.sessions.map((s) =>
-              s.id === state.activeSessionId
-                ? {
-                    ...s,
-                    messages: s.messages.map((m) =>
-                      m.id === assistantMsgId ? { ...m, isStreaming: false } : m
-                    ),
-                  }
-                : s
-            ),
-          }));
+        onDone: async () => {
+          // Wait 150ms for backend database write to finish
+          await new Promise((r) => setTimeout(r, 150));
+          try {
+            const msgs = await getThreadMessages(threadId);
+            // The last assistant message in the thread is the one we just generated
+            const dbMsgs = msgs.filter((m) => m.content?.parts?.some((p) => p.type === 'text'));
+            const lastDbMsg = dbMsgs[dbMsgs.length - 1];
+            const usagePart = lastDbMsg?.content?.parts?.find((p) => p.type === 'usage');
+            const usage = usagePart ? usagePart.usage : null;
+
+            useChatStore.setState((state) => ({
+              sessions: state.sessions.map((s) =>
+                s.id === state.activeSessionId
+                  ? {
+                      ...s,
+                      messages: s.messages.map((m) =>
+                        m.id === assistantMsgId
+                          ? { ...m, isStreaming: false, usage: usage ? { ...m.usage, ...usage } : m.usage }
+                          : m
+                      ),
+                    }
+                  : s
+              ),
+            }));
+          } catch (err) {
+            console.error('Failed to get thread usage on done:', err);
+            // fallback: mark streaming as complete
+            useChatStore.setState((state) => ({
+              sessions: state.sessions.map((s) =>
+                s.id === state.activeSessionId
+                  ? {
+                      ...s,
+                      messages: s.messages.map((m) =>
+                        m.id === assistantMsgId ? { ...m, isStreaming: false } : m
+                      ),
+                    }
+                  : s
+              ),
+            }));
+          }
         },
         onError: (err) => {
           console.error('[useChat] stream error:', err);

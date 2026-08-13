@@ -33,10 +33,11 @@ function CollapsibleSection({ title, count, children, defaultOpen = true, icon: 
   );
 }
 
-function ModelStatusPill({ status, usage }) {
+function ModelStatusPill({ status, usage, timestamp }) {
   if (!status && !usage) return null;
 
   const totalTokens = usage ? (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0) : null;
+  const displayDuration = usage?.duration;
 
   return (
     <div className="flex items-center gap-2 mt-1.5 px-1 select-none">
@@ -64,10 +65,24 @@ function ModelStatusPill({ status, usage }) {
         <span className="inline-flex items-center gap-1 text-[10px] font-mono text-zinc-400 bg-zinc-900/80 border border-zinc-800 px-2 py-0.5 rounded-md">
           <Zap className="w-3 h-3 text-amber-400" />
           {totalTokens.toLocaleString()} tokens
-          <span className="text-zinc-600">·</span>
-          <span className="text-indigo-400">P: {(usage.promptTokens ?? 0).toLocaleString()}</span>
-          <span className="text-zinc-600">/</span>
-          <span className="text-emerald-400">C: {(usage.completionTokens ?? 0).toLocaleString()}</span>
+        </span>
+      )}
+
+      {displayDuration ? (
+        <span className="text-[10px] text-zinc-500 font-mono ml-1">
+          {displayDuration}
+        </span>
+      ) : (
+        timestamp && (
+          <span className="text-[10px] text-zinc-500 font-mono ml-1">
+            {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )
+      )}
+
+      {usage && (
+        <span className="text-[10px] font-mono text-zinc-500 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          P: {(usage.promptTokens ?? 0).toLocaleString()} / C: {(usage.completionTokens ?? 0).toLocaleString()}
         </span>
       )}
     </div>
@@ -669,10 +684,16 @@ export default function AgentDetail() {
       const msgs = await getThreadMessages(thread.id);
       const normalized = msgs
         .filter((m) => m.content?.parts?.some((p) => p.type === 'text'))
-        .map((m) => ({
-          role: m.role,
-          content: m.content.parts.find((p) => p.type === 'text').text,
-        }));
+        .map((m) => {
+          const textPart = m.content?.parts?.find((p) => p.type === 'text');
+          const usagePart = m.content?.parts?.find((p) => p.type === 'usage');
+          return {
+            id: m.id,
+            role: m.role,
+            content: textPart ? textPart.text : '',
+            usage: usagePart ? usagePart.usage : null,
+          };
+        });
       setChatMessages(normalized);
     } catch {
       setChatMessages([]);
@@ -777,7 +798,7 @@ export default function AgentDetail() {
     const text = message.trim();
     if (!text || !selectedAgentId || isSending) return;
 
-    const userMessage = { role: 'user', content: text };
+    const userMessage = { role: 'user', content: text, timestamp: Date.now() };
     const assistantMsgId = `msg-${Date.now()}`;
 
     setChatMessages((prev) => [...prev, userMessage]);
@@ -813,6 +834,7 @@ export default function AgentDetail() {
           usage: null,
           isStreaming: true,
           status: 'thinking',
+          timestamp: Date.now(),
         },
       ]);
 
@@ -844,14 +866,36 @@ export default function AgentDetail() {
             prev.map((m) => (m.id === assistantMsgId ? { ...m, usage } : m))
           );
         },
-        onDone: () => {
+        onDone: async () => {
           setIsThinking(false);
           setModelStatus('generated');
-          setChatMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId ? { ...m, isStreaming: false, status: 'generated' } : m
-            )
-          );
+          // Wait 150ms for backend database write to finish
+          await new Promise((r) => setTimeout(r, 150));
+          try {
+            const msgs = await getThreadMessages(threadId);
+            const normalized = msgs
+              .filter((m) => m.content?.parts?.some((p) => p.type === 'text'))
+              .map((m) => {
+                const textPart = m.content?.parts?.find((p) => p.type === 'text');
+                const usagePart = m.content?.parts?.find((p) => p.type === 'usage');
+                return {
+                  id: m.id,
+                  role: m.role,
+                  content: textPart ? textPart.text : '',
+                  usage: usagePart ? usagePart.usage : null,
+                };
+              });
+            if (normalized.length > 0) {
+              setChatMessages(normalized);
+            }
+          } catch (err) {
+            console.error('Failed to get thread usage on done:', err);
+            setChatMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsgId ? { ...m, isStreaming: false, status: 'generated' } : m
+              )
+            );
+          }
         },
         onError: (err) => {
           console.error('Agent streaming response failed', err);
@@ -897,7 +941,7 @@ export default function AgentDetail() {
                 {threadLoading
                   ? <div className="text-sm text-zinc-550">Loading messages...</div>
                   : chatMessages.map((chat, index) => (
-                    <div key={chat.id || `${chat.role}-${index}`} className="mb-3">
+                    <div key={chat.id || `${chat.role}-${index}`} className="mb-3 group">
                       {chat.role === 'assistant' && (
                         <DarkReasoningPanel
                           isThinking={chat.isStreaming && !chat.content && !chat.reasoning}
@@ -920,6 +964,7 @@ export default function AgentDetail() {
                         <ModelStatusPill
                           status={chat.status || (chat.isStreaming ? (chat.content ? 'generating' : 'thinking') : 'generated')}
                           usage={chat.usage}
+                          timestamp={chat.timestamp}
                         />
                       )}
                     </div>
@@ -1068,7 +1113,7 @@ export default function AgentDetail() {
                       {threadLoading
                         ? <div className="text-sm text-zinc-550">Loading messages...</div>
                         : chatMessages.map((chat, index) => (
-                            <div key={chat.id || `${chat.role}-${index}`} className="mb-3">
+                            <div key={chat.id || `${chat.role}-${index}`} className="mb-3 group">
                               {chat.role === 'assistant' && (
                                 <DarkReasoningPanel
                                   isThinking={chat.isStreaming && !chat.content && !chat.reasoning}
@@ -1091,6 +1136,7 @@ export default function AgentDetail() {
                                 <ModelStatusPill
                                   status={chat.status || (chat.isStreaming ? (chat.content ? 'generating' : 'thinking') : 'generated')}
                                   usage={chat.usage}
+                                  timestamp={chat.timestamp}
                                 />
                               )}
                             </div>
