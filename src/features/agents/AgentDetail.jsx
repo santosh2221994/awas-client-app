@@ -390,7 +390,7 @@ function ReviewTab({ agentId }) {
           return (
             <div
               key={msg.id}
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${msg.role === 'user' ? 'ml-auto bg-blue-600 text-white' : 'bg-zinc-50 border border-zinc-200 text-zinc-800'
+              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${msg.role === 'user' ? 'ml-auto bg-gray-900 text-white' : 'bg-zinc-50 border border-zinc-200 text-zinc-800'
                 }`}
             >
               <div className="text-xs opacity-60 mb-1">{msg.role} · {new Date(msg.createdAt).toLocaleTimeString()}</div>
@@ -953,7 +953,7 @@ export default function AgentDetail() {
                       <div
                         className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
                           chat.role === 'user'
-                            ? 'ml-auto bg-blue-600 text-white'
+                            ? 'ml-auto bg-gray-900 text-white'
                             : 'bg-zinc-50 border border-zinc-200 text-zinc-800'
                         }`}
                       >
@@ -1125,7 +1125,7 @@ export default function AgentDetail() {
                               <div
                                 className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed shadow-sm ${
                                   chat.role === 'user'
-                                    ? 'ml-auto bg-blue-600 text-white'
+                                    ? 'ml-auto bg-gray-900 text-white'
                                     : 'bg-zinc-50 border border-zinc-200 text-zinc-800'
                                 }`}
                               >
