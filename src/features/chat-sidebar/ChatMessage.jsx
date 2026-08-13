@@ -52,7 +52,7 @@ export default function ChatMessage({ message, isThinking = false }) {
               'px-4 py-2.5 text-sm leading-relaxed shadow-sm',
               isUser
                 ? 'bg-gray-900 text-white rounded-2xl rounded-tr-none'
-                : 'bg-white text-gray-700 rounded-2xl rounded-tl-none border border-gray-200'
+                : 'bg-zinc-50 text-zinc-800 rounded-2xl rounded-tl-none border border-zinc-200'
             )}
           >
             {isUser ? content : formatContent(content)}
@@ -66,8 +66,8 @@ export default function ChatMessage({ message, isThinking = false }) {
         {/* Token usage pill — shown below completed assistant messages */}
         {!isUser && totalTokens !== null && !isStreaming && (
           <div className="flex items-center gap-1.5 mt-1 px-1 select-none">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] text-gray-400 font-mono">
+            <Zap className="w-3 h-3 text-amber-500" />
+            <span className="text-[10px] text-amber-600 font-mono">
               {totalTokens.toLocaleString()} tokens
             </span>
             {usage?.duration && (
@@ -76,8 +76,10 @@ export default function ChatMessage({ message, isThinking = false }) {
               </span>
             )}
             {usage && (
-              <span className="text-[10px] font-mono text-gray-500 ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                P: {(usage.promptTokens ?? 0).toLocaleString()} / C: {(usage.completionTokens ?? 0).toLocaleString()}
+              <span className="text-[10px] font-mono ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex items-center gap-1 select-none">
+                <span className="text-indigo-500">Input: {(usage.promptTokens ?? 0).toLocaleString()}</span>
+                <span className="text-gray-400">/</span>
+                <span className="text-emerald-500">Output: {(usage.completionTokens ?? 0).toLocaleString()}</span>
               </span>
             )}
           </div>
