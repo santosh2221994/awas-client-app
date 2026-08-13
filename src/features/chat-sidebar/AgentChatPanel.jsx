@@ -3,32 +3,18 @@ import { X, Plus, MessageSquare, Check, ChevronDown, Bot } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 import { useChat } from '../../hooks/useChat';
-
-const makeSession = () => ({
-  id: `session-${Date.now()}-${Math.random()}`,
-  label: `Chat ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-});
-
-const HISTORY_KEY = 'awas-agent-chat-history';
-
-function loadHistory(agentKey) {
-  try { return JSON.parse(localStorage.getItem(`${HISTORY_KEY}-${agentKey}`) || '[]'); } catch { return []; }
-}
-
-function saveHistory(agentKey, sessions) {
-  try { localStorage.setItem(`${HISTORY_KEY}-${agentKey}`, JSON.stringify(sessions)); } catch {}
-}
+import { useChatStore } from '../../stores/useChatStore';
 
 export default function AgentChatPanel({ agent, onClose }) {
   const agentKey = agent?.id || 'agent-chat';
 
-  const { messages, isLoading, send } = useChat(agentKey);
+  const allSessions = useChatStore((s) => s.sessions);
+  const activeSessionId = useChatStore((s) => s.activeSessionId);
+  const newChat = useChatStore((s) => s.newChat);
+  const switchSession = useChatStore((s) => s.switchSession);
 
-  const [sessions, setSessions] = useState(() => {
-    const s = makeSession();
-    return [s];
-  });
-  const [activeSessionId, setActiveSessionId] = useState(() => sessions[0].id);
+  const sessions = allSessions.filter((s) => s.agentId === agentKey);
+  const { messages, isLoading, send } = useChat(agentKey);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyRef = useRef(null);
@@ -54,9 +40,7 @@ export default function AgentChatPanel({ agent, onClose }) {
   }
 
   function handleNewChat() {
-    const s = makeSession();
-    setSessions((prev) => [s, ...prev]);
-    setActiveSessionId(s.id);
+    newChat(agentKey);
     setHistoryOpen(false);
   }
 
@@ -96,7 +80,7 @@ export default function AgentChatPanel({ agent, onClose }) {
                 {sessions.map((session) => (
                   <button
                     key={session.id}
-                    onClick={(e) => { e.stopPropagation(); setActiveSessionId(session.id); setHistoryOpen(false); }}
+                    onClick={(e) => { e.stopPropagation(); switchSession(session.id); setHistoryOpen(false); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors ${session.id === activeSessionId ? 'bg-indigo-50' : ''}`}
                   >
                     <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${session.id === activeSessionId ? 'text-indigo-500' : 'text-gray-400'}`} />

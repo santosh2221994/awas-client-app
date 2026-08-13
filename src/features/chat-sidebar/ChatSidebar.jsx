@@ -7,18 +7,17 @@ import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
 export default function ChatSidebar() {
-  const sessions = useChatStore((s) => s.sessions);
-  const activeSessionId = useChatStore((s) => s.activeSessionId);
-  const isLoading = useChatStore((s) => s.isLoading);
-  const newChat = useChatStore((s) => s.newChat);
-  const switchSession = useChatStore((s) => s.switchSession);
-
-  const messages = sessions.find((s) => s.id === activeSessionId)?.messages ?? [];
-
   const selectedAgentId = useUIStore((s) => s.selectedAgentId);
   const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
   const activeAgentId = selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
-  const { send } = useChat(activeAgentId);
+
+  const allSessions = useChatStore((s) => s.sessions);
+  const activeSessionId = useChatStore((s) => s.activeSessionId);
+  const newChat = useChatStore((s) => s.newChat);
+  const switchSession = useChatStore((s) => s.switchSession);
+
+  const sessions = allSessions.filter((s) => s.agentId === activeAgentId);
+  const { messages, isLoading, send } = useChat(activeAgentId);
   const messagesEndRef = useRef(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyRef = useRef(null);
@@ -88,7 +87,7 @@ export default function ChatSidebar() {
 
           {/* New Chat icon */}
           <button
-            onClick={newChat}
+            onClick={() => newChat(activeAgentId)}
             className="w-7 h-7 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all outline-none border border-transparent hover:border-gray-100"
             title="New Chat"
           >

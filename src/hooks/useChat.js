@@ -1,9 +1,12 @@
-import { useRef } from 'react';
+import { useEffect } from 'react';
 import { useChatStore } from '../stores/useChatStore';
 import { streamChatResponse } from '../api/services/chatService';
 
 export function useChat(agentId) {
-  const messages = useChatStore((s) => s.sessions.find((sess) => sess.id === s.activeSessionId)?.messages ?? []);
+  const resolvedAgentId = agentId || 'studio-chat-agent';
+
+  const sessions = useChatStore((s) => s.sessions);
+  const activeSessionId = useChatStore((s) => s.activeSessionId);
   const isLoading = useChatStore((s) => s.isLoading);
   const addMessage = useChatStore((s) => s.addMessage);
   const setLoading = useChatStore((s) => s.setLoading);
@@ -11,9 +14,28 @@ export function useChat(agentId) {
   const updateMessageContent = useChatStore((s) => s.updateMessageContent);
   const updateMessageReasoning = useChatStore((s) => s.updateMessageReasoning);
   const setMessageUsage = useChatStore((s) => s.setMessageUsage);
+  const newChat = useChatStore((s) => s.newChat);
+  const switchSession = useChatStore((s) => s.switchSession);
 
-  const resolvedAgentId = agentId || 'studio-chat-agent';
-  const threadIdRef = useRef(crypto.randomUUID());
+  // Filter sessions for this agent
+  const agentSessions = sessions.filter((s) => s.agentId === resolvedAgentId);
+
+  // Find current session for this agent
+  let currentSession = agentSessions.find((s) => s.id === activeSessionId);
+  if (!currentSession && agentSessions.length > 0) {
+    currentSession = agentSessions[0];
+  }
+
+  useEffect(() => {
+    if (agentSessions.length === 0) {
+      newChat(resolvedAgentId);
+    } else if (currentSession && currentSession.id !== activeSessionId) {
+      switchSession(currentSession.id);
+    }
+  }, [resolvedAgentId, agentSessions.length, currentSession?.id, activeSessionId, newChat, switchSession]);
+
+  const messages = currentSession?.messages ?? [];
+  const threadId = currentSession?.id || 'default-thread';
 
   async function send(text) {
     if (!text?.trim()) return;
@@ -43,8 +65,8 @@ export function useChat(agentId) {
     addMessage(assistantMsg);
 
     // 3. Build the message history for the API call
-    const { sessions, activeSessionId } = useChatStore.getState();
-    const history = sessions.find((s) => s.id === activeSessionId)?.messages ?? [];
+    const { sessions: currentSessions, activeSessionId: currentActiveSessionId } = useChatStore.getState();
+    const history = currentSessions.find((s) => s.id === currentActiveSessionId)?.messages ?? [];
     // Include all messages up to (but not the new blank assistant) in history
     const raw = [
       ...history
@@ -58,7 +80,7 @@ export function useChat(agentId) {
     );
 
     try {
-      await streamChatResponse(resolvedAgentId, apiMessages, threadIdRef.current, {
+      await streamChatResponse('studio-chat-agent', apiMessages, threadId, {
         onToken: (tokenText) => {
           updateMessageContent(assistantMsgId, tokenText);
         },

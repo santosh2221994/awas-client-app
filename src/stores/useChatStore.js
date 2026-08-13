@@ -1,17 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const newSession = (label) => ({
+const newSession = (label, agentId) => ({
   id: `session-${Date.now()}`,
   label: label || `Chat ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
   messages: [],
   createdAt: Date.now(),
+  agentId: agentId || 'studio-chat-agent',
 });
 
 export const useChatStore = create(
   persist(
     (set, get) => {
-      const initial = newSession('New Chat');
+      const initial = newSession('New Chat', 'studio-chat-agent');
       return {
         sessions: [initial],
         activeSessionId: initial.id,
@@ -91,8 +92,8 @@ export const useChatStore = create(
             ),
           })),
 
-        newChat: () => {
-          const session = newSession();
+        newChat: (agentId) => {
+          const session = newSession(null, agentId);
           set((state) => ({ sessions: [session, ...state.sessions], activeSessionId: session.id }));
         },
 
