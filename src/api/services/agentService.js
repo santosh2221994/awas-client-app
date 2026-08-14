@@ -350,6 +350,8 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
             }
             if (evtType === 'finish' || evtType === 'done' || evtType === 'complete') {
               emitDone();
+              try { reader.cancel(); } catch (e) {}
+              break;
             }
           } else {
             // Generic object chunk
@@ -432,6 +434,8 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
                   }
                 } catch {}
                 emitDone();
+                try { reader.cancel(); } catch (e) {}
+                break;
               }
             } catch {
               // Ignore parse errors
