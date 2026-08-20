@@ -148,7 +148,8 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
   const token = useSessionStore.getState().token;
   // Bypass Vite proxy for streaming — call NestJS backend directly so SSE
   // chunks are not buffered by the proxy before reaching the browser.
-  const backendURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+  const rawBackendURL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+  const backendURL = rawBackendURL.replace(/\/+$/, '');
 
   let response;
   try {
@@ -174,7 +175,7 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
 
   if (!response.ok) {
     let msg = `HTTP ${response.status}`;
-    try { const j = await response.json(); msg = j?.error || msg; } catch {}
+    try { const j = await response.json(); msg = j?.error || msg; } catch { }
     onError?.(new Error(msg));
     return;
   }
@@ -350,7 +351,7 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
             }
             if (evtType === 'finish' || evtType === 'done' || evtType === 'complete') {
               emitDone();
-              try { reader.cancel(); } catch (e) {}
+              try { reader.cancel(); } catch (e) { }
               break;
             }
           } else {
@@ -432,9 +433,9 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
                       duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
                     });
                   }
-                } catch {}
+                } catch { }
                 emitDone();
-                try { reader.cancel(); } catch (e) {}
+                try { reader.cancel(); } catch (e) { }
                 break;
               }
             } catch {
