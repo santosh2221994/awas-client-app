@@ -1,12 +1,72 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { cn } from '../../utils/cn';
 import ReasoningPanel from './ReasoningPanel';
-import { Zap } from 'lucide-react';
+import { Zap, CheckCircle2, Play } from 'lucide-react';
+import { useCanvasStore } from '../../stores/useCanvasStore';
+
+/**
+ * Extracts and validates workflow/node JSON schema from assistant messages.
+ * Strips raw action tags [CANVAS_ACTION] from the user-facing text.
+ */
+function extractAndValidateNodeSchema(content) {
+  if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
+
+  let cleanText = content;
+  let actions = null;
+
+  try {
+    // 1. Check for [CANVAS_ACTION] tag format e.g. [CANVAS_ACTION] {"action":"addAgent"...}
+    const canvasTagMatch = content.match(/\[CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/i);
+    if (canvasTagMatch) {
+      cleanText = content.replace(/\[CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/gi, '').trim();
+      const parsed = JSON.parse(canvasTagMatch[1]);
+      actions = Array.isArray(parsed) ? parsed : [parsed];
+    } else {
+      // 2. Match markdown code block ```json [...] ``` or inline JSON
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
+                        content.match(/(?:json\s*)?(\[\s*\{\s*"action"[\s\S]*\}\s*\])/i) ||
+                        content.match(/(?:json\s*)?(\{\s*"action"[\s\S]*?\})/i);
+
+      if (jsonMatch) {
+        const jsonStr = jsonMatch[1] || jsonMatch[0];
+        const parsed = JSON.parse(jsonStr);
+        actions = Array.isArray(parsed) ? parsed : [parsed];
+        cleanText = content.replace(jsonMatch[0], '').trim();
+      }
+    }
+
+    if (actions) {
+      const isValid = actions.length > 0 && actions.every(item => 
+        typeof item === 'object' && item !== null && (item.action || item.name || item.type)
+      );
+
+      if (isValid) {
+        return { actions, cleanText: cleanText || 'Action plan generated for canvas.' };
+      }
+    }
+  } catch (err) {
+    console.warn('[extractAndValidateNodeSchema] Error parsing action JSON', err);
+  }
+
+  return { actions: null, cleanText: content };
+}
 
 export default function ChatMessage({ message, isThinking = false }) {
   const { role, content, type, timestamp, reasoning, usage, isStreaming } = message;
   const isUser = role === 'user';
   const isCode = type === 'code';
+  const [isApplied, setIsApplied] = useState(false);
+
+  const { actions: nodeActions, cleanText } = useMemo(() => {
+    if (isUser || isCode) return { actions: null, cleanText: content };
+    return extractAndValidateNodeSchema(content);
+  }, [content, isUser, isCode]);
+
+  const handleConfirmAction = () => {
+    if (!nodeActions || isApplied) return;
+    useCanvasStore.getState().applyNodeActions(nodeActions);
+    setIsApplied(true);
+  };
 
   const formatContent = (text) => {
     if (!text) return null;
@@ -55,11 +115,39 @@ export default function ChatMessage({ message, isThinking = false }) {
                 : 'bg-zinc-50 text-zinc-800 rounded-2xl rounded-tl-none border border-zinc-200'
             )}
           >
-            {isUser ? content : formatContent(content)}
+            {isUser ? content : formatContent(cleanText)}
             {/* Blinking cursor during active streaming */}
             {!isUser && isStreaming && (
               <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
             )}
+          </div>
+        )}
+
+        {/* Interactive Confirm & Apply to Canvas Button */}
+        {!isUser && nodeActions && !isStreaming && (
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={handleConfirmAction}
+              disabled={isApplied}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs select-none',
+                isApplied
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:shadow-md cursor-pointer active:scale-95'
+              )}
+            >
+              {isApplied ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Applied to Canvas</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Confirm & Apply to Canvas</span>
+                </>
+              )}
+            </button>
           </div>
         )}
 
