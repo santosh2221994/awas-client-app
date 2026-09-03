@@ -29,17 +29,19 @@ const iconMap = {
 
 export default function AgentNode({ id, data }) {
   const { removeNode, updateNodeData } = useCanvasStore();
-  const { title, description, model, tools, role } = data;
+  const { title, name, description, model, tools, role } = data;
+  const displayTitle = title || name;
   const [agentsList, setAgentsList] = useState([]);
 
   useEffect(() => {
     listAgents()
       .then((list) => {
         setAgentsList(list);
-        if (list.length > 0 && (!title || title.startsWith('Custom Agent') || title === 'Agent')) {
+        if (list.length > 0 && !displayTitle) {
           const firstAgent = list[0];
           updateNodeData(id, {
             title: firstAgent.name,
+            name: firstAgent.name,
             description: firstAgent.description,
             model: firstAgent.model,
             role: firstAgent.type || 'Agent',
@@ -53,7 +55,7 @@ export default function AgentNode({ id, data }) {
         }
       })
       .catch((err) => console.error('Failed to load agents list in node', err));
-  }, [id, title, updateNodeData]);
+  }, [id, displayTitle, updateNodeData]);
 
   const getToolIcon = (iconName) => {
     const IconComponent = iconMap[iconName];
@@ -74,12 +76,13 @@ export default function AgentNode({ id, data }) {
           </div>
           <div className="min-w-0 flex-1">
             <select
-              value={title || ''}
+              value={displayTitle || ''}
               onChange={(e) => {
                 const selectedAgent = agentsList.find((a) => a.name === e.target.value);
                 if (selectedAgent) {
                   updateNodeData(id, {
                     title: selectedAgent.name,
+                    name: selectedAgent.name,
                     description: selectedAgent.description,
                     model: selectedAgent.model,
                     role: selectedAgent.type || 'Agent',
@@ -90,11 +93,16 @@ export default function AgentNode({ id, data }) {
                       connected: true
                     }))
                   });
+                } else {
+                  updateNodeData(id, { title: e.target.value, name: e.target.value });
                 }
               }}
               className="text-xs font-semibold text-gray-800 bg-transparent border-b border-dashed border-gray-300 focus:border-indigo-500 outline-none pr-4 cursor-pointer max-w-[130px] font-sans truncate"
             >
               <option value="">Select Agent...</option>
+              {displayTitle && !agentsList.some(a => a.name === displayTitle) && (
+                <option value={displayTitle}>{displayTitle}</option>
+              )}
               {agentsList.map((a) => (
                 <option key={a.id} value={a.name}>
                   {a.name}

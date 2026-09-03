@@ -7,7 +7,8 @@ import { listAgents } from '../../../api/services/agentService';
 
 export default function TaskNode({ id, data }) {
   const { removeNode, updateNodeData } = useCanvasStore();
-  const { title, description, expectedOutput, assignedAgent } = data;
+  const { title, name, description, expectedOutput, assignedAgent } = data;
+  const displayTitle = title || name || 'Task Runner';
   const [agentsList, setAgentsList] = useState([]);
 
   useEffect(() => {
@@ -53,8 +54,8 @@ export default function TaskNode({ id, data }) {
             <ClipboardList className="w-4 h-4" />
           </div>
           <div className="min-w-0 font-sans">
-            <h3 className="text-sm font-semibold text-gray-800 truncate" title={title}>
-              {title}
+            <h3 className="text-sm font-semibold text-gray-800 truncate" title={displayTitle}>
+              {displayTitle}
             </h3>
             <span className="text-[10px] text-gray-400 block truncate">
               Task Runner
@@ -106,6 +107,9 @@ export default function TaskNode({ id, data }) {
             className="w-full text-xs bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 outline-none hover:bg-gray-100/50 cursor-pointer font-sans"
           >
             <option value="">Unassigned</option>
+            {assignedAgent && !agentsList.some(a => a.name === assignedAgent) && (
+              <option value={assignedAgent}>{assignedAgent}</option>
+            )}
             {agentsList.map((a) => (
               <option key={a.id} value={a.name}>
                 {a.name}

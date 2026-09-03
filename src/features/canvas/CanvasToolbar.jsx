@@ -99,6 +99,7 @@ export default function CanvasToolbar() {
           variant="brand" 
           size="sm" 
           icon={Play}
+          onClick={() => setActiveTab('run')}
           className="text-xs font-semibold px-3.5 py-1.5 shadow-sm"
         >
           Run
