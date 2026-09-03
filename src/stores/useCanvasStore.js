@@ -118,6 +118,17 @@ export const useCanvasStore = create((set, get) => ({
               style: { stroke: '#6366f1', strokeWidth: 1.8 }
             }
           );
+        } else if (actionType === 'openWorkflow') {
+          const targetAgent = act.agent || act.name || 'Agent';
+          currentNodes = currentNodes.map(n => {
+            if (n.type === 'agentNode') {
+              return { ...n, data: { ...n.data, name: targetAgent, title: targetAgent } };
+            }
+            if (n.type === 'taskNode') {
+              return { ...n, data: { ...n.data, assignedAgent: targetAgent } };
+            }
+            return n;
+          });
         } else if (actionType === 'updateWorkflow' || actionType === 'updateNode') {
           if (act.nodeId) {
             currentNodes = currentNodes.map(n =>

@@ -11,14 +11,14 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 function extractAndValidateNodeSchema(content) {
   if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
 
-  let cleanText = content;
+  let cleanText = content.replace(/\[\/?CANVAS_ACTION\]/gi, '').trim();
   let actions = null;
 
   try {
     // 1. Check for [CANVAS_ACTION] tag format e.g. [CANVAS_ACTION] {"action":"addAgent"...}
     const canvasTagMatch = content.match(/\[CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/i);
     if (canvasTagMatch) {
-      cleanText = content.replace(/\[CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/gi, '').trim();
+      cleanText = content.replace(/\[\/?CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])?/gi, '').trim();
       const parsed = JSON.parse(canvasTagMatch[1]);
       actions = Array.isArray(parsed) ? parsed : [parsed];
     } else {
@@ -31,7 +31,7 @@ function extractAndValidateNodeSchema(content) {
         const jsonStr = jsonMatch[1] || jsonMatch[0];
         const parsed = JSON.parse(jsonStr);
         actions = Array.isArray(parsed) ? parsed : [parsed];
-        cleanText = content.replace(jsonMatch[0], '').trim();
+        cleanText = content.replace(jsonMatch[0], '').replace(/\[\/?CANVAS_ACTION\]/gi, '').trim();
       }
     }
 
@@ -48,7 +48,28 @@ function extractAndValidateNodeSchema(content) {
     console.warn('[extractAndValidateNodeSchema] Error parsing action JSON', err);
   }
 
-  return { actions: null, cleanText: content };
+  // 3. Fallback for prompt instructions or tag mentions missing full JSON body
+  if (content.includes('CANVAS_ACTION') || content.toLowerCase().includes('plan summary') || content.toLowerCase().includes('create a plan') || content.toLowerCase().includes('yes confirm')) {
+    let inferredName = 'Daily Task Manager';
+    const nameMatch = content.match(/Agent Role:\s*\*?\s*([^*\n]+)/i) || 
+                      content.match(/agent\s+(?:named?|called?|is)\s+["']?([^"'\n,.]+)/i) ||
+                      content.match(/create\s+a\s+["']?([^"'\n,.]+)\s+agent/i);
+    if (nameMatch && nameMatch[1]) {
+      inferredName = nameMatch[1].trim();
+    }
+
+    actions = [{
+      action: 'addAgent',
+      name: inferredName,
+      title: inferredName,
+      model: 'google/gemma-3-4b',
+      tools: []
+    }];
+
+    return { actions, cleanText: cleanText || `Action plan generated for ${inferredName}.` };
+  }
+
+  return { actions: null, cleanText };
 }
 
 export default function ChatMessage({ message, isThinking = false }) {
