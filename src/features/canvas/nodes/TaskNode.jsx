@@ -46,6 +46,8 @@ export default function TaskNode({ id, data }) {
       {/* Node Handles */}
       <NodeHandle type="target" position={Position.Left} id="target-task" />
       <NodeHandle type="source" position={Position.Right} id="source-task" />
+      <NodeHandle type="target" position={Position.Top} id="target-task-top" />
+      <NodeHandle type="source" position={Position.Bottom} id="source-task-bottom" />
 
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-tr-xl">
@@ -54,8 +56,8 @@ export default function TaskNode({ id, data }) {
             <ClipboardList className="w-4 h-4" />
           </div>
           <div className="min-w-0 font-sans">
-            <h3 className="text-sm font-semibold text-gray-800 truncate" title={displayTitle}>
-              {displayTitle}
+            <h3 className="text-xs font-bold text-gray-900 truncate" title={displayTitle.replace(/^Task Runner -\s*/i, '')}>
+              {displayTitle.replace(/^Task Runner -\s*/i, '')}
             </h3>
             <span className="text-[10px] text-gray-400 block truncate">
               Task Runner

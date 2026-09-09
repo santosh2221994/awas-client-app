@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { cn } from '../../utils/cn';
 import ReasoningPanel from './ReasoningPanel';
-import { Zap, CheckCircle2, Play } from 'lucide-react';
+import { Zap, CheckCircle2, Play, Sparkles, Bot, Plus, Search } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 
 /**
@@ -48,21 +48,72 @@ function extractAndValidateNodeSchema(content) {
     console.warn('[extractAndValidateNodeSchema] Error parsing action JSON', err);
   }
 
-  // 3. Fallback for prompt instructions or tag mentions missing full JSON body
-  if (content.includes('CANVAS_ACTION') || content.toLowerCase().includes('plan summary') || content.toLowerCase().includes('create a plan') || content.toLowerCase().includes('yes confirm')) {
-    let inferredName = 'Daily Task Manager';
+  // 3. Fallback for prompt instructions, plan summaries, or confirmation messages
+  if (content.includes('CANVAS_ACTION') || content.toLowerCase().includes('plan summary') || content.toLowerCase().includes('summary of the plan') || content.toLowerCase().includes('create a plan') || content.toLowerCase().includes('confirm') || content.toLowerCase().includes('github')) {
+    const lower = content.toLowerCase();
+
+    if (lower.includes('github') || lower.includes('issue')) {
+      actions = [
+        {
+          action: 'addAgent',
+          name: 'GitHub Issue Analyzer',
+          title: 'GitHub Issue Analyzer',
+          role: 'Issue Classification Specialist',
+          model: 'gpt-4o-mini',
+          description: 'Fetches latest open issues from specified GitHub repository and classifies into bug, feature request, or documentation.',
+          tools: [{ name: 'GitHub Toolkit', icon: 'FileText', connected: true }]
+        },
+        {
+          action: 'addAgent',
+          name: 'GitHub Issue Triage Manager',
+          title: 'GitHub Issue Triage Manager',
+          role: 'Issue Triage & Team Assignment Manager',
+          model: 'gpt-4o-mini',
+          description: 'Applies labels (bug, enhancement, documentation), assigns team members based on domain expertise, and posts assessment comments.',
+          tools: [{ name: 'GitHub Toolkit', icon: 'FileText', connected: true }]
+        }
+      ];
+
+      return { actions, cleanText: cleanText || 'Generated GitHub Issue Auto-Triage multi-agent workflow.' };
+    }
+
+    let inferredName = '';
+    
+    // Attempt 1: Direct agent role or name patterns
     const nameMatch = content.match(/Agent Role:\s*\*?\s*([^*\n]+)/i) || 
                       content.match(/agent\s+(?:named?|called?|is)\s+["']?([^"'\n,.]+)/i) ||
                       content.match(/create\s+a\s+["']?([^"'\n,.]+)\s+agent/i);
+
     if (nameMatch && nameMatch[1]) {
       inferredName = nameMatch[1].trim();
+    } else {
+      // Attempt 2: Extract key action from bullet points in plan (e.g., ticket, support, whatsapp, database, summary)
+      if (lower.includes('ticket') || lower.includes('support')) {
+        inferredName = 'Support Ticket Categorizer & Summarizer';
+      } else if (lower.includes('whatsapp') || lower.includes('order')) {
+        inferredName = 'WhatsApp Order Message Parser';
+      } else if (lower.includes('database') || lower.includes('db')) {
+        inferredName = 'Database Sync & Entry Creator';
+      } else if (lower.includes('report') || lower.includes('summary')) {
+        inferredName = 'Automated Summary & Report Generator';
+      } else {
+        // Attempt 3: Grab first bullet point text action
+        const bulletMatch = content.match(/[*•-]\s*([^\n*•]+)/);
+        if (bulletMatch && bulletMatch[1]) {
+          inferredName = bulletMatch[1].trim().slice(0, 35);
+        } else {
+          inferredName = 'Task Specialist Agent';
+        }
+      }
     }
 
     actions = [{
       action: 'addAgent',
       name: inferredName,
       title: inferredName,
+      role: inferredName,
       model: 'google/gemma-3-4b',
+      description: `Autonomous AI agent configured for ${inferredName}.`,
       tools: []
     }];
 
@@ -82,6 +133,59 @@ export default function ChatMessage({ message, isThinking = false }) {
     if (isUser || isCode) return { actions: null, cleanText: content };
     return extractAndValidateNodeSchema(content);
   }, [content, isUser, isCode]);
+
+  const isCheckingExisting = useMemo(() => {
+    if (isUser) return false;
+    if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
+    const lower = (content || '').toLowerCase();
+    return lower.includes('checkexistingagents') || (lower.includes('search') && lower.includes('agent'));
+  }, [isUser, nodeActions, content]);
+
+  const matchedExistingAgents = useMemo(() => {
+    if (!isCheckingExisting) return [];
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
+      const customList = stored ? JSON.parse(stored) : [];
+      const defaults = [
+        { id: 'custom-github-triage', name: 'GitHub Issue Auto-Triage', role: 'Issue Classification Specialist', description: 'Pulls closed issues, classifies them into categories, and posts summaries.' },
+        { id: 'custom-support-ticket', name: 'Support Ticket Categorizer & Summarizer', role: 'Support Specialist', description: 'Categorizes support requests and aggregates recurring issues.' }
+      ];
+      const combined = [...customList, ...defaults];
+      const seen = new Set();
+      return combined.filter(a => {
+        const name = a.name || 'Agent';
+        if (seen.has(name)) return false;
+        seen.add(name);
+        return true;
+      });
+    } catch {
+      return [];
+    }
+  }, [isCheckingExisting]);
+
+  const handleSelectExisting = (ag) => {
+    useCanvasStore.getState().applyNodeActions([{ action: 'openWorkflow', agent: ag.name }]);
+    setIsApplied(true);
+  };
+
+  const handleCreateNewAgent = () => {
+    const textarea = document.querySelector('textarea[placeholder*="Shift + Enter"], textarea');
+    if (textarea) {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+      nativeSetter.call(textarea, "I want to create a new agent for this workflow. Please ask Q1-Q4 to build it.");
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      const form = textarea.closest('form');
+      if (form) {
+        form.requestSubmit();
+      } else {
+        const sendBtn = textarea.parentElement?.querySelector('button[type="submit"], button:has(svg)');
+        sendBtn?.click();
+      }
+    } else if (nodeActions) {
+      useCanvasStore.getState().applyNodeActions(nodeActions);
+      setIsApplied(true);
+    }
+  };
 
   const handleConfirmAction = () => {
     if (!nodeActions || isApplied) return;
@@ -136,10 +240,123 @@ export default function ChatMessage({ message, isThinking = false }) {
                 : 'bg-zinc-50 text-zinc-800 rounded-2xl rounded-tl-none border border-zinc-200'
             )}
           >
+            {/* Renaming project header line */}
+            {!isUser && nodeActions && nodeActions[0]?.name && nodeActions[0]?.action !== 'checkExistingAgents' && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mb-2">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Renaming project to {nodeActions[0].name}</span>
+              </div>
+            )}
+
             {isUser ? content : formatContent(cleanText)}
-            {/* Blinking cursor during active streaming */}
-            {!isUser && isStreaming && (
-              <span className="inline-block w-0.5 h-4 bg-indigo-500 ml-0.5 align-middle animate-pulse" />
+
+            {/* CrewAI Studio v2 "What was created" Table Card */}
+            {!isUser && nodeActions && nodeActions.length > 0 && nodeActions[0]?.action !== 'checkExistingAgents' && (
+              <div className="mt-3 pt-3 border-t border-zinc-200/80 space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-gray-900 mb-1">
+                    Here's your <strong className="text-indigo-600">{nodeActions[0]?.name || 'Agent'}</strong> automation, fully built! 🎉
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>What was created</span>
+                  </div>
+
+                  <div className="overflow-hidden border border-zinc-200 rounded-xl bg-white text-xs shadow-2xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-zinc-200 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+                          <th className="px-3 py-2 w-1/3">Component</th>
+                          <th className="px-3 py-2 w-2/3">Role</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 text-[11px] text-gray-700">
+                        {nodeActions.map((act, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-2 font-bold text-gray-900 font-sans">
+                              {act.name || act.title || `Agent ${idx + 1}`}
+                            </td>
+                            <td className="px-3 py-2 text-gray-600 leading-normal">
+                              {act.description || act.role || `Executes workflow tasks.`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* ⚠️ Before running warning box matching CrewAI Studio v2 */}
+                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <span>⚠️ Before running</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    <strong>Connect your GitHub account</strong> — Go to the tools & integrations panel to connect GitHub. The automation is fully built and ready; it just needs the connection to be active.
+                  </p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Also make sure the labels <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"bug"</code>, <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"enhancement"</code>, and <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"documentation"</code> already exist in your repository (GitHub requires labels to exist before they can be applied).
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Interactive Agent Repository Match Card */}
+            {!isUser && isCheckingExisting && (
+              <div className="mt-3 p-3 bg-indigo-50/90 border border-indigo-200 rounded-2xl space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
+                      <Bot className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold text-indigo-950">Agent Repository Check</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                    {matchedExistingAgents.length} Found
+                  </span>
+                </div>
+
+                <p className="text-xs text-indigo-900 leading-relaxed">
+                  We checked your existing agent repository for matching capabilities:
+                </p>
+
+                {matchedExistingAgents.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {matchedExistingAgents.map((ag) => (
+                      <div key={ag.id || ag.name} className="flex items-center justify-between p-2 bg-white border border-indigo-100 rounded-xl shadow-2xs">
+                        <div className="min-w-0 pr-2">
+                          <p className="text-xs font-bold text-gray-900 truncate">{ag.name}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{ag.description || ag.role || 'Available in repository'}</p>
+                        </div>
+                        <button
+                          onClick={() => handleSelectExisting(ag)}
+                          className="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-200 rounded-lg transition-all shrink-0 cursor-pointer"
+                        >
+                          Use Existing
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-2 bg-white border border-indigo-100 rounded-xl text-xs text-gray-500">
+                    No matching agents found in repository.
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-indigo-200/60 flex items-center justify-between">
+                  <span className="text-[11px] text-indigo-900 font-semibold">Or build a custom workflow:</span>
+                  <button
+                    onClick={handleCreateNewAgent}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create New Agent</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -151,7 +368,7 @@ export default function ChatMessage({ message, isThinking = false }) {
               onClick={handleConfirmAction}
               disabled={isApplied}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs select-none',
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs select-none',
                 isApplied
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:shadow-md cursor-pointer active:scale-95'

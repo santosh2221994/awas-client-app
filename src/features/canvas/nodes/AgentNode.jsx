@@ -67,6 +67,8 @@ export default function AgentNode({ id, data }) {
       {/* Node Handles */}
       <NodeHandle type="target" position={Position.Left} id="target-agent" />
       <NodeHandle type="source" position={Position.Right} id="source-agent" />
+      <NodeHandle type="target" position={Position.Top} id="target-agent-top" />
+      <NodeHandle type="source" position={Position.Bottom} id="source-agent-bottom" />
 
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-tr-xl">
@@ -86,9 +88,9 @@ export default function AgentNode({ id, data }) {
                     description: selectedAgent.description,
                     model: selectedAgent.model,
                     role: selectedAgent.type || 'Agent',
-                    tools: selectedAgent.tools.map((t) => ({
-                      name: t.name,
-                      id: t.id,
+                    tools: (selectedAgent.tools || []).map((t) => ({
+                      name: typeof t === 'string' ? t : t.name,
+                      id: t.id || t.name,
                       icon: 'FileText',
                       connected: true
                     }))
@@ -97,21 +99,26 @@ export default function AgentNode({ id, data }) {
                   updateNodeData(id, { title: e.target.value, name: e.target.value });
                 }
               }}
-              className="text-xs font-semibold text-gray-800 bg-transparent border-b border-dashed border-gray-300 focus:border-indigo-500 outline-none pr-4 cursor-pointer max-w-[130px] font-sans truncate"
+              className="text-xs font-bold text-gray-900 bg-transparent border-b border-dashed border-gray-250 focus:border-indigo-500 outline-none pr-2 cursor-pointer w-full font-sans truncate"
             >
-              <option value="">Select Agent...</option>
-              {displayTitle && !agentsList.some(a => a.name === displayTitle) && (
+              {displayTitle && !agentsList.some((a) => a.name === displayTitle) && (
                 <option value={displayTitle}>{displayTitle}</option>
               )}
+              <option value="" disabled>Select Repository Agent...</option>
               {agentsList.map((a) => (
                 <option key={a.id} value={a.name}>
-                  {a.name}
+                  {a.name} ({a.model || 'Default'})
                 </option>
               ))}
             </select>
-            <span className="text-[10px] text-gray-400 block truncate">
-              {role || 'Agent'}
-            </span>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[10px] text-gray-400 block truncate">
+                {role || 'Agent'}
+              </span>
+              <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100/60">
+                Auth Repo
+              </span>
+            </div>
           </div>
         </div>
 
