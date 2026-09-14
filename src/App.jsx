@@ -84,7 +84,14 @@ export default function App() {
 
   const renderContent = () => {
     if (activeNavItem === 'agents') {
-      return selectedAgentId ? <AgentDetail /> : <AgentsRepository />;
+      return selectedAgentId ? (
+        <AgentDetail />
+      ) : (
+        <div className="flex h-full w-full overflow-hidden">
+          <ChatSidebar agentId="agent-builder-agent" />
+          <AgentsRepository />
+        </div>
+      );
     }
 
     if (activeNavItem === 'crew-studio' && !selectedCrewAgentId) {

@@ -11,15 +11,15 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 function extractAndValidateNodeSchema(content) {
   if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
 
-  let cleanText = content.replace(/\[\/?CANVAS_ACTION\]/gi, '').trim();
+  let cleanText = content.replace(/\[\/?(CANVAS_ACTION|AGENT_ACTION)\]/gi, '').trim();
   let actions = null;
 
   try {
-    // 1. Check for [CANVAS_ACTION] tag format e.g. [CANVAS_ACTION] {"action":"addAgent"...}
-    const canvasTagMatch = content.match(/\[CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/i);
-    if (canvasTagMatch) {
-      cleanText = content.replace(/\[\/?CANVAS_ACTION\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])?/gi, '').trim();
-      const parsed = JSON.parse(canvasTagMatch[1]);
+    // 1. Check for [CANVAS_ACTION] or [AGENT_ACTION] tag format
+    const tagMatch = content.match(/\[(?:CANVAS_ACTION|AGENT_ACTION)\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/i);
+    if (tagMatch) {
+      cleanText = content.replace(/\[\/?(CANVAS_ACTION|AGENT_ACTION)\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])?/gi, '').trim();
+      const parsed = JSON.parse(tagMatch[1]);
       actions = Array.isArray(parsed) ? parsed : [parsed];
     } else {
       // 2. Match markdown code block ```json [...] ``` or inline JSON
@@ -85,6 +85,46 @@ export default function ChatMessage({ message, isThinking = false }) {
 
   const handleConfirmAction = () => {
     if (!nodeActions || isApplied) return;
+
+    // Persist agent to localStorage custom_agents if createAgent/addAgent action is present
+    const createAct = nodeActions.find(a => a.action === 'createAgent' || a.action === 'addAgent');
+    if (createAct && createAct.name) {
+      try {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
+        const existing = stored ? JSON.parse(stored) : [];
+        const agentCustomId = `custom-${Date.now()}`;
+        const nameStr = createAct.name;
+        const typeStr = createAct.type || createAct.role || 'Assistant';
+        const descStr = createAct.description || `Autonomous AI agent for ${nameStr}.`;
+        const instructionsStr = createAct.instructions || 
+          `You are ${nameStr}, an autonomous AI specialist for ${typeStr}.\n\n` +
+          `Role & Mission:\n${descStr}\n\n` +
+          `Behavior:\n- Execute tasks accurately.\n- Provide clear output.`;
+
+        const exists = existing.some(a => a.name?.toLowerCase() === nameStr.toLowerCase());
+        if (!exists) {
+          const newAgentObj = {
+            id: agentCustomId,
+            name: nameStr,
+            description: descStr,
+            type: typeStr,
+            model: createAct.model || 'gpt-4o-mini',
+            instructions: instructionsStr,
+            price: 'Free',
+            rating: 5.0,
+            category: typeStr,
+            tools: Array.isArray(createAct.tools) ? createAct.tools : []
+          };
+          localStorage.setItem('custom_agents', JSON.stringify([...existing, newAgentObj]));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('agent_updated'));
+          }
+        }
+      } catch (err) {
+        console.warn('[ChatMessage] Failed to register created agent in custom_agents', err);
+      }
+    }
+
     useCanvasStore.getState().applyNodeActions(nodeActions);
     setIsApplied(true);
   };

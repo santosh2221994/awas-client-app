@@ -750,6 +750,21 @@ export default function AgentDetail() {
     setActiveVersionId(nextVerId);
   };
 
+  const syncCustomAgentInstructions = (newInstructions) => {
+    if (selectedAgentId?.startsWith('custom-')) {
+      try {
+        const stored = localStorage.getItem('custom_agents');
+        if (stored) {
+          const list = JSON.parse(stored);
+          const newList = list.map(a => a.id === selectedAgentId ? { ...a, instructions: newInstructions } : a);
+          localStorage.setItem('custom_agents', JSON.stringify(newList));
+        }
+      } catch (e) {
+        console.warn('Failed to sync instructions to custom_agents', e);
+      }
+    }
+  };
+
   const handlePublishVersion = () => {
     const updated = versions.map(v => ({
       ...v,
@@ -757,6 +772,7 @@ export default function AgentDetail() {
     }));
     setVersions(updated);
     localStorage.setItem(`agent_versions_${selectedAgentId}`, JSON.stringify(updated));
+    syncCustomAgentInstructions(editorInstructions);
   };
 
   const handleProviderChange = (e) => {

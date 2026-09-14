@@ -90,12 +90,21 @@ export default function CrewStudioDashboard() {
             ? (newAgentPrice.startsWith('$') ? newAgentPrice : `$${newAgentPrice}`)
             : 'Free';
 
+        const systemInstructions = 
+            `You are ${newAgentName}, an autonomous AI specialist configured as a ${newAgentType}.\n\n` +
+            `Role & Mission:\n` +
+            `${newAgentDesc || 'Execute assigned tasks with precision.'}\n\n` +
+            `Behavior & Guidelines:\n` +
+            `- Maintain concise, accurate communication.\n` +
+            `- Follow workflow logic and output clear results.`;
+
         const newAgent = {
             id: `custom-${Date.now()}`,
             name: newAgentName,
             description: newAgentDesc,
             type: newAgentType,
             model: newAgentModel,
+            instructions: systemInstructions,
             price,
             sellOnMarketplace: newAgentSell,
             rating: 5.0,

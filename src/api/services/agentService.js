@@ -9,9 +9,37 @@ const AGENT_PRICE_MAP = {
 };
 
 function getLocalAgents() {
-  const custom = localStorage.getItem('custom_agents');
-  const customList = custom ? JSON.parse(custom) : [];
-  return customList.map(agent => ({
+  const custom = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
+  let customList = custom ? JSON.parse(custom) : [];
+
+  // Clean up any accidental agentbuilder duplicates from custom_agents in localStorage
+  const cleanedCustom = customList.filter(agent => {
+    const nameLower = (agent.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const idLower = (agent.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return !nameLower.includes('agentbuild') && !idLower.includes('agentbuild');
+  });
+
+  if (cleanedCustom.length !== customList.length && typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('custom_agents', JSON.stringify(cleanedCustom));
+    } catch {}
+    customList = cleanedCustom;
+  }
+
+  const defaultSystemAgents = [
+    {
+      id: 'agent-builder-agent',
+      name: 'Agent Builder Co-Pilot',
+      description: 'Conversational AI Co-Pilot for designing, tuning system prompts, selecting tools, and creating autonomous AI agents via chat.',
+      type: 'Co-Pilot',
+      model: 'gpt-4o',
+      tools: [{ name: 'Skill List' }, { name: 'Exa Search' }],
+      price: 'Free',
+      username: 'AWAS Platform'
+    }
+  ];
+
+  const formattedCustom = customList.map(agent => ({
     id: agent.id,
     name: agent.name,
     description: agent.description,
@@ -22,6 +50,20 @@ function getLocalAgents() {
     username: agent.username || 'creator',
     sellOnMarketplace: agent.sellOnMarketplace
   }));
+
+  const customIds = new Set(formattedCustom.map(a => a.id));
+  const missingDefaults = defaultSystemAgents.filter(d => !customIds.has(d.id));
+
+  return [...missingDefaults, ...formattedCustom];
+}
+
+function normalizeAgentKey(agent) {
+  const idStr = (agent.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nameStr = (agent.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (idStr.includes('agentbuild') || nameStr.includes('agentbuild')) {
+    return 'agent-builder-agent';
+  }
+  return idStr || nameStr;
 }
 
 export function listAgents() {
@@ -30,7 +72,9 @@ export function listAgents() {
       const agentList = Array.isArray(data) ? data : Object.values(data ?? {});
 
       const apiAgents = agentList.map((agent) => {
-        const id = agent.id || agent.name;
+        const rawId = agent.id || agent.name;
+        const normKey = normalizeAgentKey({ id: rawId, name: agent.name });
+        const id = normKey === 'agent-builder-agent' ? 'agent-builder-agent' : rawId;
         const rawPrice = agent.metadata?.price ?? agent.price;
         const formattedPrice = (rawPrice !== undefined && rawPrice !== null && rawPrice !== 'Free' && rawPrice !== 0)
           ? `$${rawPrice}`
@@ -38,37 +82,90 @@ export function listAgents() {
 
         return {
           id,
-          name: agent.name,
+          name: normKey === 'agent-builder-agent' ? 'Agent Builder Co-Pilot' : agent.name,
           description: agent.description,
           model: agent.modelId || agent.model || agent.modelName,
-          type: agent.provider || agent.type,
+          type: normKey === 'agent-builder-agent' ? 'Co-Pilot' : (agent.provider || agent.type),
           tools: Object.values(agent.tools || {}).map((t) => ({ name: (t.name || t.description || '').slice(0, 40), id: t.id })),
           price: formattedPrice,
-          username: agent.metadata?.username || agent.username || 'creator',
+          username: agent.metadata?.username || agent.username || 'AWAS Platform',
         };
       });
 
-      return [...getLocalAgents(), ...apiAgents];
+      const combined = [...getLocalAgents(), ...apiAgents];
+      const seen = new Set();
+      const unique = [];
+      for (const item of combined) {
+        const key = normalizeAgentKey(item);
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          unique.push(item);
+        }
+      }
+      return unique;
     })
     .catch((err) => {
       console.warn('[listAgents] failed, falling back to local agents', err);
-      return getLocalAgents();
+      const combined = getLocalAgents();
+      const seen = new Set();
+      const unique = [];
+      for (const item of combined) {
+        const key = normalizeAgentKey(item);
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          unique.push(item);
+        }
+      }
+      return unique;
     });
 }
 
 export function getAgentById(agentId) {
+  if (agentId === 'agent-builder-agent') {
+    return Promise.resolve({
+      id: 'agent-builder-agent',
+      name: 'Agent Builder Co-Pilot',
+      description: 'Conversational AI Co-Pilot for designing, tuning system prompts, selecting tools, and creating autonomous AI agents via chat.',
+      model: 'gpt-4o',
+      type: 'Co-Pilot',
+      provider: 'openai',
+      instructions: `You are the AWAS Agent Builder Co-Pilot, an expert AI Agent Architect and Prompt Engineer embedded within AWAS Studio.
+
+Your mission is to conversationally guide users in building, drafting system instructions for, and configuring standalone AI Agents.`,
+      tools: [{ id: 'skillListTool', name: 'Skill List' }, { id: 'exaSearchTool', name: 'Exa Search' }],
+      workspaceTools: [],
+      browserTools: [],
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+  }
+
   if (agentId.startsWith('custom-')) {
     const custom = localStorage.getItem('custom_agents');
     const customList = custom ? JSON.parse(custom) : [];
     const matched = customList.find(a => a.id === agentId);
+    
+    const name = matched?.name || 'Custom Agent';
+    const role = matched?.type || matched?.role || name;
+    const desc = matched?.description || 'No description provided.';
+    const systemPromptText = matched?.instructions || 
+      `You are ${name}, an autonomous AI specialist for ${role}.\n\n` +
+      `Role & Primary Goal:\n` +
+      `${desc}\n\n` +
+      `Task Execution & Rules:\n` +
+      `- Analyze workflow inputs carefully.\n` +
+      `- Execute node tasks accurately.\n` +
+      `- Return clear, structured, and high quality responses.`;
+
     return Promise.resolve({
       id: agentId,
-      name: matched?.name || 'Unknown Agent',
-      description: matched?.description || 'No description provided.',
+      name,
+      description: desc,
       model: matched?.model || 'gpt-4o',
-      type: matched?.type || 'Agent',
+      type: role,
       provider: 'openai',
-      instructions: 'You are a helpful assistant specialized in this workflow.',
+      instructions: systemPromptText,
       tools: matched?.tools || [],
       workspaceTools: [],
       browserTools: [],

@@ -81,7 +81,7 @@ export function useChat(agentId) {
     );
 
     try {
-      await streamChatResponse('studio-chat-agent', apiMessages, threadId, {
+      await streamChatResponse(resolvedAgentId, apiMessages, threadId, {
         onToken: (tokenText) => {
           updateMessageContent(assistantMsgId, tokenText);
         },

@@ -98,6 +98,49 @@ export const useCanvasStore = create((set, get) => ({
 
           currentNodes.push(newAgentNode, newTaskNode);
 
+          // Persist created agent with generated system instructions to custom_agents in localStorage
+          try {
+            const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
+            const existing = stored ? JSON.parse(stored) : [];
+            const agentCustomId = `custom-${Date.now()}-${idx}`;
+            const agentRole = act.role || act.type || nodeName;
+            const agentDesc = act.description || `Autonomous AI agent for ${nodeName}.`;
+            const systemInstructions = act.instructions || 
+              `You are ${nodeName}, an autonomous AI specialist for ${agentRole}.\n\n` +
+              `Role & Primary Goal:\n` +
+              `${agentDesc}\n\n` +
+              `Task Execution & Rules:\n` +
+              `- Analyze incoming inputs and workflow requests carefully.\n` +
+              `- Follow assigned node task instructions with precision.\n` +
+              `- Return clear, structured, and deterministic outputs.`;
+
+            const existsIdx = existing.findIndex(a => a.name?.toLowerCase() === nodeName.toLowerCase());
+            const newAgentObj = {
+              id: existsIdx !== -1 ? existing[existsIdx].id : agentCustomId,
+              name: nodeName,
+              description: agentDesc,
+              type: agentRole,
+              model: act.model || 'gpt-4o-mini',
+              instructions: systemInstructions,
+              price: 'Free',
+              rating: 5.0,
+              category: 'Assistant',
+              tools: Array.isArray(act.tools) ? act.tools : []
+            };
+
+            if (existsIdx !== -1) {
+              existing[existsIdx] = { ...existing[existsIdx], ...newAgentObj };
+              localStorage.setItem('custom_agents', JSON.stringify(existing));
+            } else {
+              localStorage.setItem('custom_agents', JSON.stringify([...existing, newAgentObj]));
+            }
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('agent_updated'));
+            }
+          } catch (err) {
+            console.warn('[useCanvasStore] Failed to save custom agent to localStorage', err);
+          }
+
           // Connect from process-1 or trigger-1 if present
           const processNode = currentNodes.find(n => n.id === 'process-1' || n.type === 'processNode');
           const sourceId = processNode ? processNode.id : (currentNodes[0]?.id || 'trigger-1');

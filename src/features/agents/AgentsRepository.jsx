@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Bot, LayoutTemplate } from 'lucide-react';
+import { Search, Plus, Bot, Sparkles, Cpu, Wrench, Grid, List, ArrowUpRight, SlidersHorizontal, CheckCircle2 } from 'lucide-react';
 import { listAgents } from '../../api/services/agentService';
 import Button from '../../components/Button';
 import { useUIStore } from '../../stores/useUIStore';
+import { cn } from '../../utils/cn';
 
-function AgentRow({ agent }) {
+function AgentCard({ agent, viewMode }) {
   const { setActiveNavItem, setSelectedAgentId } = useUIStore();
 
   function handleSelectAgent() {
@@ -12,36 +13,123 @@ function AgentRow({ agent }) {
     setSelectedAgentId(agent.id);
   }
 
-  return (
-    <div
-      onClick={handleSelectAgent}
-      className="cursor-pointer flex flex-col gap-3 p-4 border border-gray-200 rounded-2xl bg-white shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50/10 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-          <Bot className="w-5 h-5" />
+  const isCoPilot = agent.type?.toLowerCase().includes('copilot') || 
+                    agent.type?.toLowerCase().includes('co-pilot') || 
+                    agent.id === 'agent-builder-agent';
+
+  if (viewMode === 'grid') {
+    return (
+      <div
+        onClick={handleSelectAgent}
+        className="group relative flex flex-col justify-between p-5 bg-white border border-gray-200/80 hover:border-indigo-300 rounded-3xl shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden"
+      >
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-11 h-11 rounded-2xl flex items-center justify-center text-white font-bold shadow-xs transition-transform group-hover:scale-105 shrink-0",
+                isCoPilot
+                  ? "bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800"
+                  : "bg-gradient-to-br from-slate-800 via-slate-900 to-zinc-900"
+              )}>
+                {isCoPilot ? <Sparkles className="w-5 h-5 text-amber-300" /> : <Bot className="w-5 h-5" />}
+              </div>
+              <div className="min-w-0">
+                <span className={cn(
+                  "inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1",
+                  isCoPilot
+                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200/60"
+                    : "bg-slate-100 text-slate-700"
+                )}>
+                  {agent.type || 'Assistant'}
+                </span>
+                <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                  {agent.name || 'Untitled Agent'}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4">
+            {agent.description || 'No description provided for this agent.'}
+          </p>
         </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-gray-900 truncate">{agent.name || 'Untitled agent'}</div>
-          <div className="text-xs text-gray-500 truncate">
-            {agent.description || 'No description available.'}
+
+        <div className="pt-3 border-t border-gray-100 space-y-3">
+          <div className="flex items-center flex-wrap gap-1.5 text-[11px]">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 text-gray-600 border border-gray-200/60 font-mono">
+              <Cpu className="w-3 h-3 text-indigo-500" />
+              {agent.model || 'gpt-4o'}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 text-gray-600 border border-gray-200/60">
+              <Wrench className="w-3 h-3 text-amber-500" />
+              {agent.tools?.length ?? 0} tool{agent.tools?.length === 1 ? '' : 's'}
+            </span>
+            {agent.price && agent.price !== 'Free' && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold border border-emerald-200/60 ml-auto">
+                {agent.price}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-gray-400 font-medium truncate">By {agent.username || 'Creator'}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleSelectAgent(); }}
+              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:text-indigo-700 shrink-0"
+            >
+              <span>View Agent</span>
+              <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </button>
           </div>
         </div>
       </div>
-      <div className="flex flex-col items-start gap-2 sm:items-end">
-        <div className="text-xs text-gray-500">Type: {agent.type || 'Agent'}</div>
-        <div className="flex flex-wrap gap-2">
-          <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Model: {agent.model || 'Unknown'}</span>
-          <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Tools: {agent.tools?.length ?? 0}</span>
+    );
+  }
+
+  return (
+    <div
+      onClick={handleSelectAgent}
+      className="group cursor-pointer flex flex-col gap-3 p-4 border border-gray-200/80 rounded-2xl bg-white shadow-2xs transition-all hover:border-indigo-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="flex items-center gap-3.5 min-w-0">
+        <div className={cn(
+          "w-11 h-11 rounded-2xl flex items-center justify-center text-white font-bold shrink-0 shadow-2xs transition-transform group-hover:scale-105",
+          isCoPilot ? "bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800" : "bg-gradient-to-br from-slate-800 via-slate-900 to-zinc-900"
+        )}>
+          {isCoPilot ? <Sparkles className="w-5 h-5 text-amber-300" /> : <Bot className="w-5 h-5" />}
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+              {agent.name || 'Untitled Agent'}
+            </h3>
+            <span className="rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-extrabold px-2 py-0.5 border border-indigo-100">
+              {agent.type || 'Assistant'}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 truncate mt-0.5">
+            {agent.description || 'No description available.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="hidden sm:flex items-center gap-2">
+          <span className="rounded-lg bg-gray-50 border border-gray-200/80 px-2.5 py-1 text-xs text-gray-600 font-mono">
+            {agent.model || 'gpt-4o'}
+          </span>
+          <span className="rounded-lg bg-gray-50 border border-gray-200/80 px-2.5 py-1 text-xs text-gray-600">
+            {agent.tools?.length ?? 0} tools
+          </span>
+        </div>
+        <button
           onClick={(e) => { e.stopPropagation(); handleSelectAgent(); }}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
         >
-          <LayoutTemplate className="w-3.5 h-3.5" />
-          View Agent
-        </Button>
+          <span>Open Agent</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );
@@ -52,89 +140,208 @@ export default function AgentsRepository() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('All');
+  const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
-    async function fetchAgents() {
-      setLoading(true);
+    let isInitial = true;
+
+    async function fetchAgents(isFirstLoad = false) {
+      if (isFirstLoad) {
+        setLoading(true);
+      }
       setError(null);
       try {
         const data = await listAgents();
-        setAgents(Array.isArray(data) ? data : []);
+        const newList = Array.isArray(data) ? data : [];
+        setAgents((prev) => {
+          const prevSig = prev.map((a) => `${a.id}:${a.name}:${a.tools?.length}`).join('|');
+          const newSig = newList.map((a) => `${a.id}:${a.name}:${a.tools?.length}`).join('|');
+          return prevSig === newSig ? prev : newList;
+        });
       } catch (err) {
         setError(err.message || 'Unable to load agents.');
       } finally {
-        setLoading(false);
+        if (isFirstLoad) {
+          setLoading(false);
+        }
       }
     }
-    fetchAgents();
+
+    fetchAgents(true);
+
+    const handleUpdate = () => fetchAgents(false);
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('agent_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('agent_updated', handleUpdate);
+    };
   }, []);
+
+  const categories = ['All', 'Co-Pilots', 'Assistants', 'Custom'];
 
   const filteredAgents = agents.filter((agent) => {
     const value = query.toLowerCase();
-    return (
+    const matchesSearch = (
       agent.name?.toLowerCase().includes(value) ||
       agent.description?.toLowerCase().includes(value) ||
       agent.model?.toLowerCase().includes(value)
     );
+
+    if (!matchesSearch) return false;
+
+    if (category === 'Co-Pilots') {
+      return agent.type?.toLowerCase().includes('copilot') || agent.type?.toLowerCase().includes('co-pilot') || agent.id === 'agent-builder-agent';
+    }
+    if (category === 'Custom') {
+      return agent.id?.startsWith('custom-');
+    }
+    if (category === 'Assistants') {
+      return !agent.type?.toLowerCase().includes('copilot') && !agent.type?.toLowerCase().includes('co-pilot');
+    }
+
+    return true;
   });
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 relative">
-      <div className="h-full overflow-y-auto p-6">
+    <div className="flex-1 min-h-0 overflow-hidden bg-slate-50/60 relative">
+      <div className="h-full overflow-y-auto p-6 scrollbar-thin">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+          {/* Premium Header Banner */}
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-600">Agents Repository</p>
-                <h1 className="mt-2 text-2xl font-semibold text-gray-900">Create and configure CrewAI agents or connect external A2A agents</h1>
-                <p className="mt-2 text-sm text-gray-500 max-w-2xl">
-                  Browse all available agents, connect external tools, and manage agent workflows from one centralized repository.
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600">AWAS Agent Repository</span>
+                </div>
+                <h1 className="text-2xl font-black text-gray-900 tracking-tight sm:text-3xl">
+                  AI Agent Directory & Hub
+                </h1>
+                <p className="mt-1.5 text-xs text-gray-500 max-w-xl leading-relaxed">
+                  Browse, configure, and chat with autonomous agents or use the <strong className="text-indigo-600">Agent Builder Co-Pilot</strong> in the chat sidebar to generate custom agents.
                 </p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <Button variant="brand" size="sm" className="whitespace-nowrap">
-                  <Plus />
-                  Add Agent
-                </Button>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-indigo-50/80 border border-indigo-100 rounded-2xl px-4 py-2 text-xs font-semibold text-indigo-900">
+                  <Bot className="w-4 h-4 text-indigo-600" />
+                  <span>{agents.length} Active Agents</span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white"
-                  placeholder="Search agents, models, or tools"
-                />
+            {/* Filter Controls Bar */}
+            <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Category tabs */}
+              <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-2xl border border-gray-200/50">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategory(cat)}
+                    className={cn(
+                      "px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer select-none",
+                      category === cat
+                        ? "bg-white text-gray-900 shadow-xs"
+                        : "text-gray-500 hover:text-gray-800"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
               </div>
-              <div className="text-sm text-gray-500">
-                {agents.length} agent{agents.length === 1 ? '' : 's'} available
+
+              {/* Search & Layout toggle */}
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    className="w-full rounded-2xl border border-gray-200/80 bg-gray-50 py-2 pl-9 pr-3 text-xs text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white"
+                    placeholder="Search agents, models, tools..."
+                  />
+                </div>
+
+                <div className="flex items-center bg-gray-100/80 p-1 rounded-xl border border-gray-200/50">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all cursor-pointer",
+                      viewMode === 'grid' ? "bg-white text-indigo-600 shadow-2xs" : "text-gray-400 hover:text-gray-600"
+                    )}
+                    title="Grid View"
+                  >
+                    <Grid className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={cn(
+                      "p-1.5 rounded-lg transition-all cursor-pointer",
+                      viewMode === 'list' ? "bg-white text-indigo-600 shadow-2xs" : "text-gray-400 hover:text-gray-600"
+                    )}
+                    title="List View"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {loading && (
-              <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
-                Loading agents...
+          {/* Agents Display Area */}
+          <div>
+            {loading && agents.length === 0 && (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="h-44 rounded-3xl border border-gray-200 bg-white p-5 animate-pulse space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-gray-200" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3 bg-gray-200 rounded w-1/2" />
+                        <div className="h-2 bg-gray-100 rounded w-3/4" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            {error && (
+
+            {error && agents.length === 0 && (
               <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
                 {error}
               </div>
             )}
-            {!loading && !error && filteredAgents.length === 0 && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-8 text-center text-gray-500">
-                No agents found. Try adjusting your search.
+
+            {!loading && filteredAgents.length === 0 && agents.length > 0 && (
+              <div className="rounded-3xl border border-gray-200 bg-white p-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto text-indigo-600">
+                  <Bot className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">No agents found</h3>
+                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                  Try adjusting your search query or use the Agent Builder Co-Pilot in the left sidebar to create a new agent.
+                </p>
               </div>
             )}
-            {filteredAgents.map((agent) => (
-              <AgentRow key={agent.id || agent.name} agent={agent} />
-            ))}
+
+            {filteredAgents.length > 0 && (
+              <div className={cn(
+                viewMode === 'grid'
+                  ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  : "space-y-3"
+              )}>
+                {filteredAgents.map((agent) => (
+                  <AgentCard key={agent.id || agent.name} agent={agent} viewMode={viewMode} />
+                ))}
+              </div>
+            )}
           </div>
+
         </div>
       </div>
     </div>

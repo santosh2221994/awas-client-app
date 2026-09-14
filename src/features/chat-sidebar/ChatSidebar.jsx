@@ -6,10 +6,12 @@ import { useUIStore } from '../../stores/useUIStore';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
-export default function ChatSidebar() {
+export default function ChatSidebar({ agentId }) {
   const selectedAgentId = useUIStore((s) => s.selectedAgentId);
   const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
-  const activeAgentId = selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
+  const activeAgentId = agentId || selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
+
+  const isAgentBuilder = activeAgentId === 'agent-builder-agent';
 
   const allSessions = useChatStore((s) => s.sessions);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
@@ -38,13 +40,16 @@ export default function ChatSidebar() {
   }, [historyOpen]);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
+  const headerTitle = isAgentBuilder
+    ? (activeSession?.label || 'Agent Builder Co-Pilot')
+    : (activeSession?.label || 'Studio Chat');
 
   return (
-    <div className="w-80 h-full flex flex-col bg-gray-50 border-r border-gray-200">
+    <div className="w-80 h-full flex flex-col bg-gray-50 border-r border-gray-200 shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white select-none">
-        <span className="text-sm font-semibold text-gray-800">
-          {activeSession?.label || 'Studio Chat'}
+        <span className="text-sm font-semibold text-gray-800 truncate">
+          {headerTitle}
         </span>
 
         <div className="flex items-center gap-1">
@@ -106,8 +111,16 @@ export default function ChatSidebar() {
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-800">How may I help you?</p>
-              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">Ask me anything about agents,<br />workflows, or canvas setup.</p>
+              <p className="text-sm font-semibold text-gray-800">
+                {isAgentBuilder ? 'Create an Agent with AI' : 'How may I help you?'}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">
+                {isAgentBuilder ? (
+                  <>Describe what agent you want to create.<br />I'll help draft system prompts & tools.</>
+                ) : (
+                  <>Ask me anything about agents,<br />workflows, or canvas setup.</>
+                )}
+              </p>
             </div>
           </div>
         ) : (
