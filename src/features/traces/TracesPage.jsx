@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, ChevronRight, ChevronDown, Clock, Activity, CheckCircle2, XCircle, Filter } from 'lucide-react';
+import { useWorkflowHistoryStore } from '../../stores/useWorkflowHistoryStore';
 
 const MOCK_TRACES = [
   { id: 'tr-0001', name: 'Lead Enrichment Pipeline', agent: 'SalesAgent', status: 'Success', duration: '1.24s', tokens: 3120, cost: '$0.0042', timestamp: '2 min ago', steps: 8 },
@@ -66,7 +67,7 @@ function TraceRow({ trace }) {
             <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
               <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-xs font-bold text-gray-700">Execution Steps</span>
+                <span className="text-xs font-bold text-gray-700">Execution Steps & Logs</span>
                 <span className="ml-auto text-[11px] text-gray-400">{trace.steps} steps total</span>
               </div>
               <table className="w-full text-xs">
@@ -80,29 +81,42 @@ function TraceRow({ trace }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {MOCK_STEPS.slice(0, trace.steps > 5 ? 5 : trace.steps).map((s) => (
-                    <tr key={s.step} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-2 text-gray-400 font-mono">{s.step}</td>
-                      <td className="px-4 py-2 text-gray-800 font-medium">{s.name}</td>
-                      <td className="px-4 py-2">
-                        <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 text-indigo-600 border border-indigo-200/40">
-                          {s.type}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 font-mono text-gray-600">{s.duration}</td>
-                      <td className="px-4 py-2">
-                        <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> {s.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {trace.steps > 5 && (
-                    <tr>
-                      <td colSpan="5" className="px-4 py-2 text-center text-[11px] text-gray-400 italic">
-                        +{trace.steps - 5} more steps
-                      </td>
-                    </tr>
+                  {trace.customLogs && trace.customLogs.length > 0 ? (
+                    trace.customLogs.map((l, i) => (
+                      <tr key={i} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-2 text-gray-400 font-mono">{i + 1}</td>
+                        <td className="px-4 py-2 text-gray-800 font-medium">{l.text}</td>
+                        <td className="px-4 py-2">
+                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 text-indigo-600 border border-indigo-200/40">
+                            Workflow Telemetry
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 font-mono text-gray-600">[{l.time}]</td>
+                        <td className="px-4 py-2">
+                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Success
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    MOCK_STEPS.slice(0, trace.steps > 5 ? 5 : trace.steps).map((s) => (
+                      <tr key={s.step} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-2 text-gray-400 font-mono">{s.step}</td>
+                        <td className="px-4 py-2 text-gray-800 font-medium">{s.name}</td>
+                        <td className="px-4 py-2">
+                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 text-indigo-600 border border-indigo-200/40">
+                            {s.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 font-mono text-gray-600">{s.duration}</td>
+                        <td className="px-4 py-2">
+                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> {s.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -117,8 +131,24 @@ function TraceRow({ trace }) {
 export default function TracesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const { history } = useWorkflowHistoryStore();
 
-  const filtered = MOCK_TRACES.filter((t) => {
+  const formattedHistoryTraces = history.map((run) => ({
+    id: run.id.substring(0, 10),
+    name: run.workflowName || 'Workflow Execution',
+    agent: (run.agentsUsed && run.agentsUsed.join(', ')) || `${run.agentCount} Auth Agent(s)`,
+    status: run.status || 'Success',
+    duration: run.metrics?.duration || '1.20s',
+    tokens: run.metrics?.totalTokens || 250,
+    cost: run.metrics?.cost || '$0.0035',
+    timestamp: run.timeFormatted || 'Recently',
+    steps: run.logs?.length || 5,
+    customLogs: run.logs || []
+  }));
+
+  const allTraces = [...formattedHistoryTraces, ...MOCK_TRACES];
+
+  const filtered = allTraces.filter((t) => {
     const matchesSearch =
       t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -127,15 +157,15 @@ export default function TracesPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const successCount = MOCK_TRACES.filter(t => t.status === 'Success').length;
-  const failedCount = MOCK_TRACES.filter(t => t.status === 'Failed').length;
+  const successCount = allTraces.filter(t => t.status === 'Success').length;
+  const failedCount = allTraces.filter(t => t.status === 'Failed').length;
 
   return (
     <div className="flex-1 bg-slate-50/50 overflow-y-auto select-none selection:bg-indigo-100">
       {/* Page Header */}
       <div className="bg-white border-b border-gray-200/80 px-8 py-6">
         <div className="max-w-6xl mx-auto space-y-1">
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Traces</h1>
+          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Traces & Workflow Execution History</h1>
           <p className="text-xs text-gray-500">Inspect execution logs, token usage, and step-by-step agent traces</p>
         </div>
       </div>
@@ -144,10 +174,10 @@ export default function TracesPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Traces', value: MOCK_TRACES.length, color: 'text-gray-900' },
+            { label: 'Total Traces', value: allTraces.length, color: 'text-gray-900' },
             { label: 'Successful', value: successCount, color: 'text-emerald-600' },
             { label: 'Failed', value: failedCount, color: 'text-red-500' },
-            { label: 'Total Tokens', value: MOCK_TRACES.reduce((s, t) => s + t.tokens, 0).toLocaleString(), color: 'text-indigo-600' },
+            { label: 'Total Tokens', value: allTraces.reduce((s, t) => s + (t.tokens || 0), 0).toLocaleString(), color: 'text-indigo-600' },
           ].map((s) => (
             <div key={s.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs">
               <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>

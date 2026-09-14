@@ -29,5 +29,8 @@ export const useUIStore = create((set) => ({
   setSelectedCrewAgentId: (agentId) => set({ selectedCrewAgentId: agentId }),
   clearSelectedCrewAgentId: () => set({ selectedCrewAgentId: null }),
 
+  projectTitle: null,
+  setProjectTitle: (title) => set({ projectTitle: title }),
+
   setRightPanelView: (view) => set({ rightPanelView: view }),
 }));
