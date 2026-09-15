@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
-  MiniMap
+  MiniMap,
+  useReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -16,6 +18,56 @@ import CanvasHeader from './CanvasHeader';
 import CanvasToolbar from './CanvasToolbar';
 import WorkflowRunnerPanel from './WorkflowRunnerPanel';
 
+function FlowCanvasInner({ nodes, edges, handleNodesChange, handleEdgesChange, onConnect }) {
+  const { fitView } = useReactFlow();
+  const prevNodeCount = useRef(nodes.length);
+
+  useEffect(() => {
+    if (prevNodeCount.current === 0 && nodes.length > 0) {
+      setTimeout(() => fitView({ padding: 0.25, duration: 400 }), 50);
+    }
+    prevNodeCount.current = nodes.length;
+  }, [nodes.length, fitView]);
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      onNodesChange={handleNodesChange}
+      onEdgesChange={handleEdgesChange}
+      onConnect={onConnect}
+      nodeTypes={nodeTypes}
+      fitView
+      fitViewOptions={{ padding: 0.25 }}
+      defaultEdgeOptions={{
+        type: 'smoothstep',
+        style: { stroke: '#d1d5db', strokeWidth: 1.5 }
+      }}
+      connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 1.8 }}
+      proOptions={{ hideAttribution: true }}
+      minZoom={0.2}
+      maxZoom={1.5}
+    >
+      <Background variant="dots" gap={18} size={1} color="#e2e8f0" />
+      <Controls
+        showInteractive={false}
+        className="!bg-white !border-gray-200 !shadow-sm !rounded-lg overflow-hidden border"
+      />
+      <MiniMap
+        nodeStrokeWidth={3}
+        nodeColor={(node) => {
+          if (node.type === 'agentNode') return '#dbeafe';
+          if (node.type === 'taskNode') return '#f3e8ff';
+          if (node.type === 'processNode') return '#e2e8f0';
+          return '#f1f5f9';
+        }}
+        maskColor="rgba(255, 255, 255, 0.75)"
+        className="!rounded-xl !border !border-gray-200 !shadow-sm overflow-hidden"
+      />
+    </ReactFlow>
+  );
+}
+
 export default function FlowCanvas() {
   const {
     nodes,
@@ -23,7 +75,10 @@ export default function FlowCanvas() {
     onNodesChange,
     onEdgesChange,
     initializeFlow,
-    setEdges
+    setEdges,
+    loadWorkflowCanvas,
+    saveWorkflowCanvas,
+    setActiveWorkflowId,
   } = useCanvasStore();
   const { selectedCrewAgentId, activeTab } = useUIStore();
 
@@ -31,7 +86,13 @@ export default function FlowCanvas() {
   useEffect(() => {
     async function loadWorkflow() {
       if (!selectedCrewAgentId) {
+        setActiveWorkflowId(null);
         initializeFlow(initialNodes, initialEdges);
+        return;
+      }
+
+      if (selectedCrewAgentId.startsWith('wf-')) {
+        loadWorkflowCanvas(selectedCrewAgentId);
         return;
       }
 
@@ -156,7 +217,20 @@ export default function FlowCanvas() {
     }
 
     loadWorkflow();
-  }, [selectedCrewAgentId, initializeFlow]);
+  }, [selectedCrewAgentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save canvas on every node/edge change for wf- workflows
+  const handleNodesChange = (changes) => {
+    onNodesChange(changes);
+    const wfId = useCanvasStore.getState().activeWorkflowId;
+    if (wfId) setTimeout(() => saveWorkflowCanvas(wfId), 0);
+  };
+
+  const handleEdgesChange = (changes) => {
+    onEdgesChange(changes);
+    const wfId = useCanvasStore.getState().activeWorkflowId;
+    if (wfId) setTimeout(() => saveWorkflowCanvas(wfId), 0);
+  };
 
   const onConnect = (params) => {
     const newEdge = {
@@ -179,46 +253,15 @@ export default function FlowCanvas() {
         <WorkflowRunnerPanel />
       ) : (
         <div className="flex-1 h-full relative outline-none select-none">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.25 }}
-            defaultEdgeOptions={{
-              type: 'smoothstep',
-              style: { stroke: '#d1d5db', strokeWidth: 1.5 }
-            }}
-            connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 1.8 }}
-            proOptions={{ hideAttribution: true }}
-            minZoom={0.2}
-            maxZoom={1.5}
-          >
-            {/* Subtle grid pattern background */}
-            <Background variant="dots" gap={18} size={1} color="#e2e8f0" />
-
-            {/* Bottom left zoom actions */}
-            <Controls
-              showInteractive={false}
-              className="!bg-white !border-gray-200 !shadow-sm !rounded-lg overflow-hidden border"
+          <ReactFlowProvider>
+            <FlowCanvasInner
+              nodes={nodes}
+              edges={edges}
+              handleNodesChange={handleNodesChange}
+              handleEdgesChange={handleEdgesChange}
+              onConnect={onConnect}
             />
-
-            {/* Navigation overlay view */}
-            <MiniMap
-              nodeStrokeWidth={3}
-              nodeColor={(node) => {
-                if (node.type === 'agentNode') return '#dbeafe';
-                if (node.type === 'taskNode') return '#f3e8ff';
-                if (node.type === 'processNode') return '#e2e8f0';
-                return '#f1f5f9';
-              }}
-              maskColor="rgba(255, 255, 255, 0.75)"
-              className="!rounded-xl !border !border-gray-200 !shadow-sm overflow-hidden"
-            />
-          </ReactFlow>
+          </ReactFlowProvider>
         </div>
       )}
     </div>

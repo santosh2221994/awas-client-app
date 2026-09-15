@@ -17,6 +17,19 @@ export default function CanvasHeader() {
   const [agentName, setAgentName] = useState('Agent & Workflow Studio');
   const [agentDesc, setAgentDesc] = useState('Build, test, and deploy your AI agent automation.');
 
+  // Read workflow name/description from localStorage for wf- IDs
+  const loadWorkflowMeta = (wfId) => {
+    try {
+      const workflows = JSON.parse(localStorage.getItem('crew_workflows') || '[]');
+      const wf = workflows.find((w) => w.id === wfId);
+      setAgentName(wf?.name || formatSlugToTitle(wfId));
+      setAgentDesc(wf?.description || 'Workflow canvas.');
+    } catch {
+      setAgentName(formatSlugToTitle(wfId));
+      setAgentDesc('Workflow canvas.');
+    }
+  };
+
   useEffect(() => {
     if (projectTitle) {
       setAgentName(projectTitle);
@@ -40,6 +53,11 @@ export default function CanvasHeader() {
       return;
     }
 
+    if (selectedCrewAgentId.startsWith('wf-')) {
+      loadWorkflowMeta(selectedCrewAgentId);
+      return;
+    }
+
     const fallbackTitle = formatSlugToTitle(selectedCrewAgentId);
 
     getAgentById(selectedCrewAgentId)
@@ -52,6 +70,21 @@ export default function CanvasHeader() {
         setAgentDesc('Build, test, and deploy your AI agent automation.');
       });
   }, [selectedCrewAgentId, projectTitle]);
+
+  // Reactively update when another part of the app writes to crew_workflows
+  // (e.g. ChatMessage writes the workflow name after user clicks "confirm")
+  useEffect(() => {
+    if (!selectedCrewAgentId?.startsWith('wf-')) return;
+
+    const handleStorage = (e) => {
+      if (e.key === 'crew_workflows') {
+        loadWorkflowMeta(selectedCrewAgentId);
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [selectedCrewAgentId]);
+
 
   return (
     <div className="px-6 pt-4 pb-2 bg-white select-none flex items-center justify-between border-b border-gray-100">

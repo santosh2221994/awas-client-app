@@ -8,8 +8,7 @@ import ChatInput from './ChatInput';
 
 export default function ChatSidebar({ agentId }) {
   const selectedAgentId = useUIStore((s) => s.selectedAgentId);
-  const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
-  const activeAgentId = agentId || selectedAgentId || selectedCrewAgentId || 'studio-chat-agent';
+  const activeAgentId = agentId || selectedAgentId || 'studio-chat-agent';
 
   const isAgentBuilder = activeAgentId === 'agent-builder-agent';
 
@@ -125,8 +124,8 @@ export default function ChatSidebar({ agentId }) {
           </div>
         ) : (
           <div className="space-y-3">
-            {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} isThinking={false} />
+            {messages.map((message, index) => (
+              <ChatMessage key={message.id} message={message} isThinking={false} messageIndex={index} />
             ))}
             {/* Only show global thinking bubble when no streaming message is already visible */}
             {isLoading && !messages[messages.length - 1]?.isStreaming && (

@@ -3,10 +3,16 @@ import { cn } from '../../utils/cn';
 import ReasoningPanel from './ReasoningPanel';
 import { Zap, CheckCircle2, Play, Sparkles, Bot, Plus, Search } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { useUIStore } from '../../stores/useUIStore';
 
 /**
  * Extracts and validates workflow/node JSON schema from assistant messages.
  * Strips raw action tags [CANVAS_ACTION] from the user-facing text.
+ */
+/**
+ * Extracts and validates workflow/node JSON schema from assistant messages.
+ * Handles: [CANVAS_ACTION] tags, markdown code blocks, inline JSON arrays,
+ * partial streaming fragments, addTask format, and canvasDefinition payloads.
  */
 function extractAndValidateNodeSchema(content) {
   if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
@@ -14,116 +20,122 @@ function extractAndValidateNodeSchema(content) {
   let cleanText = content.replace(/\[\/?(CANVAS_ACTION|AGENT_ACTION)\]/gi, '').trim();
   let actions = null;
 
+  // Helper: try to parse a string as JSON, return null on failure
+  const tryParse = (str) => {
+    try { return JSON.parse(str); } catch { return null; }
+  };
+
+  // Helper: validate a parsed actions array
+  const isValidActions = (arr) =>
+    Array.isArray(arr) && arr.length > 0 &&
+    arr.every(item => typeof item === 'object' && item !== null && (item.action || item.name || item.type));
+
   try {
-    // 1. Check for [CANVAS_ACTION] or [AGENT_ACTION] tag format
-    const tagMatch = content.match(/\[(?:CANVAS_ACTION|AGENT_ACTION)\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])/i);
+    // ── 1. [CANVAS_ACTION] or [AGENT_ACTION] tag format ─────────────────────
+    const tagMatch = content.match(/\[(?:CANVAS_ACTION|AGENT_ACTION)\]\s*([\s\S]*?)(?:\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]|$)/i);
     if (tagMatch) {
-      cleanText = content.replace(/\[\/?(CANVAS_ACTION|AGENT_ACTION)\]\s*(\{[\s\S]*?\}|\[[\s\S]*?\])?/gi, '').trim();
-      const parsed = JSON.parse(tagMatch[1]);
-      actions = Array.isArray(parsed) ? parsed : [parsed];
-    } else {
-      // 2. Match markdown code block ```json [...] ``` or inline JSON
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || 
-                        content.match(/(?:json\s*)?(\[\s*\{\s*"action"[\s\S]*\}\s*\])/i) ||
-                        content.match(/(?:json\s*)?(\{\s*"action"[\s\S]*?\})/i);
-
-      if (jsonMatch) {
-        const jsonStr = jsonMatch[1] || jsonMatch[0];
-        const parsed = JSON.parse(jsonStr);
-        actions = Array.isArray(parsed) ? parsed : [parsed];
-        cleanText = content.replace(jsonMatch[0], '').replace(/\[\/?CANVAS_ACTION\]/gi, '').trim();
+      const tagContent = tagMatch[1].trim();
+      const parsed = tryParse(tagContent);
+      if (parsed) {
+        const arr = Array.isArray(parsed) ? parsed : [parsed];
+        if (isValidActions(arr)) {
+          cleanText = content.replace(/\[\/?(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*?(?:\[\/?(?:CANVAS_ACTION|AGENT_ACTION)\]|$)/gi, '').trim();
+          return { actions: arr, cleanText: cleanText || 'Action plan generated for canvas.' };
+        }
       }
     }
 
-    if (actions) {
-      const isValid = actions.length > 0 && actions.every(item => 
-        typeof item === 'object' && item !== null && (item.action || item.name || item.type)
-      );
-
-      if (isValid) {
-        return { actions, cleanText: cleanText || 'Action plan generated for canvas.' };
+    // ── 2. Markdown code block ```json [...] ``` ─────────────────────────────
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      const parsed = tryParse(codeBlockMatch[1].trim());
+      if (parsed) {
+        const arr = Array.isArray(parsed) ? parsed : [parsed];
+        if (isValidActions(arr)) {
+          cleanText = content.replace(codeBlockMatch[0], '').trim();
+          return { actions: arr, cleanText: cleanText || 'Action plan generated for canvas.' };
+        }
+        // Also handle canvasDefinition format from generateCanvasWorkflow tool
+        if (parsed.canvasDefinition?.nodes?.length > 0) {
+          actions = parsed.canvasDefinition.nodes.map(n => ({
+            action: 'addAgent',
+            name: n.label || n.id,
+            description: n.config?.description || '',
+            model: n.config?.model || 'gpt-4o-mini',
+          }));
+          if (isValidActions(actions)) {
+            cleanText = content.replace(codeBlockMatch[0], '').trim();
+            return { actions, cleanText: cleanText || 'Workflow generated for canvas.' };
+          }
+        }
       }
     }
+
+    // ── 3. Complete JSON array: [...] anywhere in the text ───────────────────
+    const fullArrayMatch = content.match(/(\[\s*\{\s*"action"[\s\S]*?\}\s*\])/i);
+    if (fullArrayMatch) {
+      const parsed = tryParse(fullArrayMatch[1]);
+      if (parsed && isValidActions(parsed)) {
+        cleanText = content.replace(fullArrayMatch[0], '').trim();
+        return { actions: parsed, cleanText: cleanText || 'Action plan generated for canvas.' };
+      }
+    }
+
+    // ── 4. Complete single JSON object with action field ─────────────────────
+    const singleObjMatch = content.match(/(\{\s*"action"[\s\S]*?\})/i);
+    if (singleObjMatch) {
+      const parsed = tryParse(singleObjMatch[1]);
+      if (parsed && isValidActions([parsed])) {
+        cleanText = content.replace(singleObjMatch[0], '').trim();
+        return { actions: [parsed], cleanText: cleanText || 'Action generated for canvas.' };
+      }
+    }
+
+    // ── 5. Partial / streaming fragment recovery ─────────────────────────────
+    // The AI may stream fragments like:  }, {"action": "addTask", ...}]
+    // Try to recover by finding all complete {...} objects inside the text
+    const objectMatches = [...content.matchAll(/\{\s*"action"\s*:\s*"[^"]+"[^}]*\}/g)];
+    if (objectMatches.length > 0) {
+      const recovered = [];
+      for (const m of objectMatches) {
+        const parsed = tryParse(m[0]);
+        if (parsed && (parsed.action || parsed.name || parsed.type)) recovered.push(parsed);
+      }
+      if (recovered.length > 0) {
+        // Strip the matched JSON fragments from the display text
+        cleanText = content;
+        for (const m of objectMatches) cleanText = cleanText.replace(m[0], '');
+        cleanText = cleanText.replace(/[,\[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
+        return { actions: recovered, cleanText: cleanText || 'Action plan generated for canvas.' };
+      }
+    }
+
+    // ── 6. addTask format: {"action":"addTask","id":...,"agentId":...,"description":...}
+    // These don't have a top-level "name" but are still valid canvas actions
+    const taskObjectMatches = [...content.matchAll(/\{\s*"action"\s*:\s*"addTask"[\s\S]*?\}/g)];
+    if (taskObjectMatches.length > 0) {
+      const recovered = [];
+      for (const m of taskObjectMatches) {
+        const parsed = tryParse(m[0]);
+        if (parsed?.action) recovered.push(parsed);
+      }
+      if (recovered.length > 0) {
+        cleanText = content;
+        for (const m of taskObjectMatches) cleanText = cleanText.replace(m[0], '');
+        cleanText = cleanText.replace(/[,\[\]{}\r\n]/g, ' ').replace(/\s+/g, ' ').trim();
+        return { actions: recovered, cleanText: cleanText || 'Workflow tasks generated for canvas.' };
+      }
+    }
+
   } catch (err) {
     console.warn('[extractAndValidateNodeSchema] Error parsing action JSON', err);
-  }
-
-  // 3. Fallback for prompt instructions, plan summaries, or confirmation messages
-  if (content.includes('CANVAS_ACTION') || content.toLowerCase().includes('plan summary') || content.toLowerCase().includes('summary of the plan') || content.toLowerCase().includes('create a plan') || content.toLowerCase().includes('confirm') || content.toLowerCase().includes('github')) {
-    const lower = content.toLowerCase();
-
-    if (lower.includes('github') || lower.includes('issue')) {
-      actions = [
-        {
-          action: 'addAgent',
-          name: 'GitHub Issue Analyzer',
-          title: 'GitHub Issue Analyzer',
-          role: 'Issue Classification Specialist',
-          model: 'gpt-4o-mini',
-          description: 'Fetches latest open issues from specified GitHub repository and classifies into bug, feature request, or documentation.',
-          tools: [{ name: 'GitHub Toolkit', icon: 'FileText', connected: true }]
-        },
-        {
-          action: 'addAgent',
-          name: 'GitHub Issue Triage Manager',
-          title: 'GitHub Issue Triage Manager',
-          role: 'Issue Triage & Team Assignment Manager',
-          model: 'gpt-4o-mini',
-          description: 'Applies labels (bug, enhancement, documentation), assigns team members based on domain expertise, and posts assessment comments.',
-          tools: [{ name: 'GitHub Toolkit', icon: 'FileText', connected: true }]
-        }
-      ];
-
-      return { actions, cleanText: cleanText || 'Generated GitHub Issue Auto-Triage multi-agent workflow.' };
-    }
-
-    let inferredName = '';
-    
-    // Attempt 1: Direct agent role or name patterns
-    const nameMatch = content.match(/Agent Role:\s*\*?\s*([^*\n]+)/i) || 
-                      content.match(/agent\s+(?:named?|called?|is)\s+["']?([^"'\n,.]+)/i) ||
-                      content.match(/create\s+a\s+["']?([^"'\n,.]+)\s+agent/i);
-
-    if (nameMatch && nameMatch[1]) {
-      inferredName = nameMatch[1].trim();
-    } else {
-      // Attempt 2: Extract key action from bullet points in plan (e.g., ticket, support, whatsapp, database, summary)
-      if (lower.includes('ticket') || lower.includes('support')) {
-        inferredName = 'Support Ticket Categorizer & Summarizer';
-      } else if (lower.includes('whatsapp') || lower.includes('order')) {
-        inferredName = 'WhatsApp Order Message Parser';
-      } else if (lower.includes('database') || lower.includes('db')) {
-        inferredName = 'Database Sync & Entry Creator';
-      } else if (lower.includes('report') || lower.includes('summary')) {
-        inferredName = 'Automated Summary & Report Generator';
-      } else {
-        // Attempt 3: Grab first bullet point text action
-        const bulletMatch = content.match(/[*•-]\s*([^\n*•]+)/);
-        if (bulletMatch && bulletMatch[1]) {
-          inferredName = bulletMatch[1].trim().slice(0, 35);
-        } else {
-          inferredName = 'Task Specialist Agent';
-        }
-      }
-    }
-
-    actions = [{
-      action: 'addAgent',
-      name: inferredName,
-      title: inferredName,
-      role: inferredName,
-      model: 'google/gemma-3-4b',
-      description: `Autonomous AI agent configured for ${inferredName}.`,
-      tools: []
-    }];
-
-    return { actions, cleanText: cleanText || `Action plan generated for ${inferredName}.` };
   }
 
   return { actions: null, cleanText };
 }
 
-export default function ChatMessage({ message, isThinking = false }) {
+
+export default function ChatMessage({ message, isThinking = false, messageIndex = 0 }) {
   const { role, content, type, timestamp, reasoning, usage, isStreaming } = message;
   const isUser = role === 'user';
   const isCode = type === 'code';
@@ -134,23 +146,26 @@ export default function ChatMessage({ message, isThinking = false }) {
     return extractAndValidateNodeSchema(content);
   }, [content, isUser, isCode]);
 
+  const isBuildAction = useMemo(() => {
+    if (!nodeActions) return false;
+    const buildTypes = ['addAgent', 'addNode', 'addTask', 'connectEdges', 'generateCanvasWorkflow'];
+    return nodeActions.some(a => buildTypes.includes(a.action));
+  }, [nodeActions]);
+
   const isCheckingExisting = useMemo(() => {
     if (isUser) return false;
+    if (messageIndex > 1) return false;
     if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
     const lower = (content || '').toLowerCase();
     return lower.includes('checkexistingagents') || (lower.includes('search') && lower.includes('agent'));
-  }, [isUser, nodeActions, content]);
+  }, [isUser, nodeActions, content, messageIndex]);
 
   const matchedExistingAgents = useMemo(() => {
     if (!isCheckingExisting) return [];
     try {
       const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
       const customList = stored ? JSON.parse(stored) : [];
-      const defaults = [
-        { id: 'custom-github-triage', name: 'GitHub Issue Auto-Triage', role: 'Issue Classification Specialist', description: 'Pulls closed issues, classifies them into categories, and posts summaries.' },
-        { id: 'custom-support-ticket', name: 'Support Ticket Categorizer & Summarizer', role: 'Support Specialist', description: 'Categorizes support requests and aggregates recurring issues.' }
-      ];
-      const combined = [...customList, ...defaults];
+      const combined = [...customList];
       const seen = new Set();
       return combined.filter(a => {
         const name = a.name || 'Agent';
@@ -190,47 +205,30 @@ export default function ChatMessage({ message, isThinking = false }) {
   const handleConfirmAction = () => {
     if (!nodeActions || isApplied) return;
 
-    // Persist agent to localStorage custom_agents if createAgent/addAgent action is present
-    const createAct = nodeActions.find(a => a.action === 'createAgent' || a.action === 'addAgent');
-    if (createAct && createAct.name) {
-      try {
-        const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
-        const existing = stored ? JSON.parse(stored) : [];
-        const agentCustomId = `custom-${Date.now()}`;
-        const nameStr = createAct.name;
-        const typeStr = createAct.type || createAct.role || 'Assistant';
-        const descStr = createAct.description || `Autonomous AI agent for ${nameStr}.`;
-        const instructionsStr = createAct.instructions || 
-          `You are ${nameStr}, an autonomous AI specialist for ${typeStr}.\n\n` +
-          `Role & Mission:\n${descStr}\n\n` +
-          `Behavior:\n- Execute tasks accurately.\n- Provide clear output.`;
+    // Ensure the active workflow ID is set so applyNodeActions can save
+    const { selectedCrewAgentId, setSelectedCrewAgentId } = useUIStore.getState();
+    const canvasStore = useCanvasStore.getState();
 
-        const exists = existing.some(a => a.name?.toLowerCase() === nameStr.toLowerCase());
-        if (!exists) {
-          const newAgentObj = {
-            id: agentCustomId,
-            name: nameStr,
-            description: descStr,
-            type: typeStr,
-            model: createAct.model || 'gpt-4o-mini',
-            instructions: instructionsStr,
-            price: 'Free',
-            rating: 5.0,
-            category: typeStr,
-            tools: Array.isArray(createAct.tools) ? createAct.tools : []
-          };
-          localStorage.setItem('custom_agents', JSON.stringify([...existing, newAgentObj]));
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('agent_updated'));
-          }
-        }
-      } catch (err) {
-        console.warn('[ChatMessage] Failed to register created agent in custom_agents', err);
-      }
+    if (selectedCrewAgentId?.startsWith('wf-') && !canvasStore.activeWorkflowId) {
+      canvasStore.setActiveWorkflowId(selectedCrewAgentId);
     }
 
-    useCanvasStore.getState().applyNodeActions(nodeActions);
+    canvasStore.applyNodeActions(nodeActions);
     setIsApplied(true);
+
+    // If user is not already on the canvas, navigate there
+    if (!selectedCrewAgentId?.startsWith('wf-')) {
+      // Create a new workflow and navigate into it
+      const wfId = `wf-${Date.now()}`;
+      const stored = localStorage.getItem('crew_workflows');
+      const workflows = stored ? JSON.parse(stored) : [];
+      const firstName = nodeActions.find(a => a.name)?.name || 'New Workflow';
+      workflows.push({ id: wfId, name: firstName, description: '', createdAt: Date.now(), agent: { id: wfId, name: firstName } });
+      localStorage.setItem('crew_workflows', JSON.stringify(workflows));
+      canvasStore.setActiveWorkflowId(wfId);
+      setTimeout(() => canvasStore.saveWorkflowCanvas(wfId), 0);
+      setSelectedCrewAgentId(wfId);
+    }
   };
 
   const formatContent = (text) => {
@@ -281,7 +279,7 @@ export default function ChatMessage({ message, isThinking = false }) {
             )}
           >
             {/* Renaming project header line */}
-            {!isUser && nodeActions && nodeActions[0]?.name && nodeActions[0]?.action !== 'checkExistingAgents' && (
+            {!isUser && isBuildAction && nodeActions[0]?.name && (
               <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mb-2">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Renaming project to {nodeActions[0].name}</span>
@@ -291,7 +289,7 @@ export default function ChatMessage({ message, isThinking = false }) {
             {isUser ? content : formatContent(cleanText)}
 
             {/* CrewAI Studio v2 "What was created" Table Card */}
-            {!isUser && nodeActions && nodeActions.length > 0 && nodeActions[0]?.action !== 'checkExistingAgents' && (
+            {!isUser && isBuildAction && nodeActions.length > 0 && (
               <div className="mt-3 pt-3 border-t border-zinc-200/80 space-y-3">
                 <div>
                   <p className="text-xs font-bold text-gray-900 mb-1">
@@ -329,18 +327,7 @@ export default function ChatMessage({ message, isThinking = false }) {
                   </div>
                 </div>
 
-                {/* ⚠️ Before running warning box matching CrewAI Studio v2 */}
-                <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                    <span>⚠️ Before running</span>
-                  </div>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    <strong>Connect your GitHub account</strong> — Go to the tools & integrations panel to connect GitHub. The automation is fully built and ready; it just needs the connection to be active.
-                  </p>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Also make sure the labels <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"bug"</code>, <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"enhancement"</code>, and <code className="bg-amber-100 px-1 py-0.5 rounded font-mono text-[10px]">"documentation"</code> already exist in your repository (GitHub requires labels to exist before they can be applied).
-                  </p>
-                </div>
+
               </div>
             )}
 
@@ -402,7 +389,7 @@ export default function ChatMessage({ message, isThinking = false }) {
         )}
 
         {/* Interactive Confirm & Apply to Canvas Button */}
-        {!isUser && nodeActions && !isStreaming && (
+        {!isUser && isBuildAction && !isStreaming && (
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={handleConfirmAction}

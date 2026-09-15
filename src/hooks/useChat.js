@@ -92,6 +92,17 @@ export function useChat(agentId) {
           setMessageUsage(assistantMsgId, usage);
         },
         onDone: async () => {
+          // Skip thread fetch for workflow sessions — no backend thread exists
+          if (threadId.startsWith('wf-')) {
+            useChatStore.setState((state) => ({
+              sessions: state.sessions.map((s) =>
+                s.id === state.activeSessionId
+                  ? { ...s, messages: s.messages.map((m) => m.id === assistantMsgId ? { ...m, isStreaming: false } : m) }
+                  : s
+              ),
+            }));
+            return;
+          }
           // Wait 150ms for backend database write to finish
           await new Promise((r) => setTimeout(r, 150));
           try {

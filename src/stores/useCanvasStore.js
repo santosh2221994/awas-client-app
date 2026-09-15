@@ -39,7 +39,35 @@ export const useCanvasStore = create((set, get) => ({
 
   setViewport: (viewport) => set({ viewport }),
 
+  activeWorkflowId: null,
+
   initializeFlow: (nodes, edges) => set({ nodes, edges }),
+
+  setActiveWorkflowId: (id) => set({ activeWorkflowId: id }),
+
+  saveWorkflowCanvas: (workflowId) => {
+    const { nodes, edges } = get();
+    try {
+      localStorage.setItem(`canvas_${workflowId}`, JSON.stringify({ nodes, edges }));
+    } catch (err) {
+      console.warn('[useCanvasStore] Failed to save workflow canvas', err);
+    }
+  },
+
+  loadWorkflowCanvas: (workflowId) => {
+    try {
+      const stored = localStorage.getItem(`canvas_${workflowId}`);
+      if (stored) {
+        const { nodes, edges } = JSON.parse(stored);
+        set({ nodes: nodes || [], edges: edges || [], activeWorkflowId: workflowId });
+        return true;
+      }
+    } catch (err) {
+      console.warn('[useCanvasStore] Failed to load workflow canvas', err);
+    }
+    set({ nodes: [], edges: [], activeWorkflowId: workflowId });
+    return false;
+  },
 
   applyNodeActions: (actions) => {
     if (!Array.isArray(actions)) return;
@@ -50,9 +78,12 @@ export const useCanvasStore = create((set, get) => ({
 
       actions.forEach((act, idx) => {
         const actionType = act.action || act.type || 'addAgent';
-        const nodeName = act.name || 'New Node';
+        // Normalize addTask (AI output: {action:"addTask", agentId, description}) → addAgent
+        const normalizedAction = actionType === 'addTask' ? 'addAgent' : actionType;
+        const nodeName = act.name || act.agentId || 'New Node';
 
-        if (actionType === 'addAgent' || actionType === 'addNode') {
+        if (normalizedAction === 'addAgent' || normalizedAction === 'addNode') {
+
           if (idx === 0) {
             // Remove old agent and task nodes when starting fresh action application
             const oldAgentTaskIds = new Set(
@@ -60,145 +91,121 @@ export const useCanvasStore = create((set, get) => ({
                 .filter(n => n.type === 'agentNode' || n.type === 'taskNode')
                 .map(n => n.id)
             );
-
             currentNodes = currentNodes.filter(n => !oldAgentTaskIds.has(n.id));
             currentEdges = currentEdges.filter(
               e => !oldAgentTaskIds.has(e.source) && !oldAgentTaskIds.has(e.target)
             );
+
+            // Ensure trigger + process nodes exist
+            if (!currentNodes.find(n => n.type === 'triggerNode')) {
+              currentNodes.push({
+                id: 'trigger-1', type: 'triggerNode',
+                position: { x: 60, y: 270 },
+                data: { triggers: [{ type: 'Manual', icon: 'Hand', active: true }] }
+              });
+            }
+            if (!currentNodes.find(n => n.type === 'processNode')) {
+              currentNodes.push({
+                id: 'process-1', type: 'processNode',
+                position: { x: 340, y: 270 },
+                data: { version: 'Version 1', processType: 'Sequential', options: ['Sequential', 'Parallel', 'Hierarchical'] }
+              });
+              currentEdges.push({
+                id: 'e-trigger-process', source: 'trigger-1', target: 'process-1',
+                type: 'smoothstep', style: { stroke: '#d1d5db', strokeWidth: 1.5 }
+              });
+            }
           }
 
-          const agentId = `agent-${Date.now()}-${idx}`;
-          const taskId = `task-${Date.now()}-${idx}`;
+          const ts = Date.now();
+          const agentId = `agent-${ts}-${idx}`;
+          const taskId = `task-${ts}-${idx}`;
+          const displayAgentName = act.name || act.title || `Agent ${idx + 1}`;
+          const taskTitle = act.taskTitle || act.task || `Run ${displayAgentName}`;
+          const taskDesc = act.taskDescription || act.description || `Executes tasks assigned to ${displayAgentName}.`;
 
-          const displayAgentName = act.name || act.title || 'Support Ticket Categorizer & Summarizer';
+          const xPos = 640 + idx * 380;
 
-          let explicitTaskTitle = act.taskTitle;
-          let explicitTaskDesc = act.description;
-
-          if (displayAgentName.includes('Analyzer') || idx === 0) {
-            explicitTaskTitle = 'Fetch and Classify New Issues';
-            explicitTaskDesc = 'Fetch the most recent open issues from the GitHub repository {repo_owner}/{repo_name} (filter to issues created in the last 24 hours)...';
-          } else if (displayAgentName.includes('Triage') || idx === 1) {
-            explicitTaskTitle = 'Triage and Respond to Issues';
-            explicitTaskDesc = 'For each classified GitHub issue in {repo_owner}/{repo_name}: apply labels (bug, enhancement, documentation), assign team members, and post tailored initial assessment comments.';
-          } else {
-            explicitTaskTitle = `Task Runner - ${displayAgentName}`;
-          }
-
-          // CrewAI 2-Tier Topology: Agents on top row (y = 120), Tasks on bottom row (y = 420)
-          const xPos = 680 + idx * 380;
-
-          // Ensure Process node is positioned at top-left (y = 120) and Trigger at bottom-left (y = 420)
-          currentNodes = currentNodes.map(n => {
-            if (n.id === 'process-1' || n.type === 'processNode') {
-              return { ...n, position: { x: 340, y: 120 } };
+          currentNodes.push(
+            {
+              id: agentId,
+              type: 'agentNode',
+              position: { x: xPos, y: 120 },
+              data: {
+                name: displayAgentName,
+                title: displayAgentName,
+                model: act.model || 'gpt-4o-mini',
+                role: act.role || displayAgentName,
+                description: act.description || `Autonomous AI agent for ${displayAgentName}.`,
+                tools: Array.isArray(act.tools)
+                  ? act.tools.map(t => typeof t === 'string' ? { name: t, icon: 'Wrench', connected: true } : t)
+                  : []
+              }
+            },
+            {
+              id: taskId,
+              type: 'taskNode',
+              position: { x: xPos, y: 420 },
+              data: {
+                name: taskTitle,
+                title: taskTitle,
+                assignedAgent: displayAgentName,
+                description: taskDesc
+              }
             }
-            if (n.id === 'trigger-1' || n.type === 'triggerNode') {
-              return { ...n, position: { x: 340, y: 420 } };
-            }
-            return n;
-          });
+          );
 
-          const newAgentNode = {
-            id: agentId,
-            type: 'agentNode',
-            position: { x: xPos, y: 120 },
-            data: {
-              name: displayAgentName,
-              title: displayAgentName,
-              model: act.model || 'gpt-4o-mini',
-              role: act.role || displayAgentName,
-              description: act.description || `Autonomous AI agent for ${displayAgentName}.`,
-              tools: Array.isArray(act.tools)
-                ? act.tools.map(t => typeof t === 'string' ? { name: t, icon: 'Wrench', connected: true } : t)
-                : [{ name: 'GitHub', icon: 'FileText', connected: true }]
-            }
-          };
-
-          const newTaskNode = {
-            id: taskId,
-            type: 'taskNode',
-            position: { x: xPos, y: 420 },
-            data: {
-              name: explicitTaskTitle,
-              title: explicitTaskTitle,
-              assignedAgent: displayAgentName,
-              description: explicitTaskDesc
-            }
-          };
-
-          currentNodes.push(newAgentNode, newTaskNode);
-
-          // Persist created agent with generated system instructions to custom_agents in localStorage
+          // Persist to custom_agents localStorage
           try {
             const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
             const existing = stored ? JSON.parse(stored) : [];
-            const agentCustomId = `custom-${Date.now()}-${idx}`;
-            const agentRole = act.role || act.type || nodeName;
-            const agentDesc = act.description || `Autonomous AI agent for ${nodeName}.`;
-            const systemInstructions = act.instructions || 
-              `You are ${nodeName}, an autonomous AI specialist for ${agentRole}.\n\n` +
-              `Role & Primary Goal:\n` +
-              `${agentDesc}\n\n` +
-              `Task Execution & Rules:\n` +
-              `- Analyze incoming inputs and workflow requests carefully.\n` +
-              `- Follow assigned node task instructions with precision.\n` +
-              `- Return clear, structured, and deterministic outputs.`;
-
-            const existsIdx = existing.findIndex(a => a.name?.toLowerCase() === nodeName.toLowerCase());
+            const agentRole = act.role || act.type || displayAgentName;
+            const agentDesc = act.description || `Autonomous AI agent for ${displayAgentName}.`;
+            const existsIdx = existing.findIndex(a => a.name?.toLowerCase() === displayAgentName.toLowerCase());
             const newAgentObj = {
-              id: existsIdx !== -1 ? existing[existsIdx].id : agentCustomId,
-              name: nodeName,
+              id: existsIdx !== -1 ? existing[existsIdx].id : `custom-${ts}-${idx}`,
+              name: displayAgentName,
               description: agentDesc,
               type: agentRole,
               model: act.model || 'gpt-4o-mini',
-              instructions: systemInstructions,
-              price: 'Free',
-              rating: 5.0,
-              category: 'Assistant',
+              instructions: act.instructions || `You are ${displayAgentName}, an autonomous AI specialist.\n\n${agentDesc}`,
+              price: 'Free', rating: 5.0, category: 'Assistant',
               tools: Array.isArray(act.tools) ? act.tools : []
             };
-
-            if (existsIdx !== -1) {
-              existing[existsIdx] = { ...existing[existsIdx], ...newAgentObj };
-              localStorage.setItem('custom_agents', JSON.stringify(existing));
-            } else {
-              localStorage.setItem('custom_agents', JSON.stringify([...existing, newAgentObj]));
-            }
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('agent_updated'));
-            }
+            if (existsIdx !== -1) existing[existsIdx] = { ...existing[existsIdx], ...newAgentObj };
+            else existing.push(newAgentObj);
+            localStorage.setItem('custom_agents', JSON.stringify(existing));
+            if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('agent_updated'));
           } catch (err) {
             console.warn('[useCanvasStore] Failed to save custom agent to localStorage', err);
           }
 
-          // Connect from process-1 or trigger-1 if present
-          const processNode = currentNodes.find(n => n.id === 'process-1' || n.type === 'processNode');
-          const sourceId = processNode ? processNode.id : (currentNodes[0]?.id || 'trigger-1');
+          // Vertical edge: agent → task
+          currentEdges.push({
+            id: `e-v-${agentId}-${taskId}`,
+            source: agentId, target: taskId,
+            type: 'smoothstep', style: { stroke: '#6366f1', strokeWidth: 2 }
+          });
 
-          currentEdges.push(
-            // Vertical edge from Agent down to Task
-            {
-              id: `e-v-${agentId}-${taskId}`,
-              source: agentId,
-              target: taskId,
-              sourceHandle: 'source-agent-bottom',
-              targetHandle: 'target-task-top',
-              type: 'smoothstep',
-              style: { stroke: '#6366f1', strokeWidth: 2 }
-            },
-            // Horizontal edge connecting Trigger / Prev Task -> Current Task
-            {
-              id: `e-h-${sourceHorizontalId}-${taskId}`,
-              source: sourceHorizontalId,
-              target: taskId,
-              sourceHandle: sourceHorizontalId.startsWith('trigger') ? 'source-trigger' : 'source-task',
-              targetHandle: 'target-task',
-              type: 'smoothstep',
-              style: { stroke: '#6366f1', strokeWidth: 2 }
+          // Horizontal edge: process-1 → agent (first agent) or prev task → current task
+          if (idx === 0) {
+            currentEdges.push({
+              id: `e-process-${agentId}`,
+              source: 'process-1', target: agentId,
+              type: 'smoothstep', style: { stroke: '#d1d5db', strokeWidth: 1.5 }
+            });
+          } else {
+            const prevTaskId = `task-${currentNodes.find(n => n.id.startsWith('task-') && n.id !== taskId)?.id?.split('-').slice(-1)[0] || (ts)}-${idx - 1}`;
+            const prevTask = currentNodes.find(n => n.type === 'taskNode' && n.id !== taskId);
+            if (prevTask) {
+              currentEdges.push({
+                id: `e-${prevTask.id}-${taskId}`,
+                source: prevTask.id, target: taskId,
+                type: 'smoothstep', style: { stroke: '#d1d5db', strokeWidth: 1.5 }
+              });
             }
-          );
-        } else if (actionType === 'openWorkflow') {
+          }
+        } else if (normalizedAction === 'openWorkflow') {
           const targetAgent = act.agent || act.name || 'Agent';
           currentNodes = currentNodes.map(n => {
             if (n.type === 'agentNode') {
@@ -209,16 +216,23 @@ export const useCanvasStore = create((set, get) => ({
             }
             return n;
           });
-        } else if (actionType === 'updateWorkflow' || actionType === 'updateNode') {
+        } else if (normalizedAction === 'updateWorkflow' || normalizedAction === 'updateNode') {
           if (act.nodeId) {
             currentNodes = currentNodes.map(n =>
               n.id === act.nodeId ? { ...n, data: { ...n.data, ...act.data } } : n
             );
           }
         }
+
       });
 
       return { nodes: currentNodes, edges: currentEdges };
     });
+
+    // Persist canvas state for the active workflow after state flush
+    const { activeWorkflowId } = get();
+    if (activeWorkflowId) {
+      setTimeout(() => get().saveWorkflowCanvas(activeWorkflowId), 0);
+    }
   },
 }));
