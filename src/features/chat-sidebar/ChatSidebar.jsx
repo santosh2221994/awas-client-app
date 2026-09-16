@@ -8,7 +8,10 @@ import ChatInput from './ChatInput';
 
 export default function ChatSidebar({ agentId }) {
   const selectedAgentId = useUIStore((s) => s.selectedAgentId);
-  const activeAgentId = agentId || selectedAgentId || 'studio-chat-agent';
+  const selectedCrewAgentId = useUIStore((s) => s.selectedCrewAgentId);
+  
+  // If we're inside a workflow, use its ID. Otherwise use selectedAgentId or default.
+  const activeAgentId = agentId || selectedCrewAgentId || selectedAgentId || 'studio-chat-agent';
 
   const isAgentBuilder = activeAgentId === 'agent-builder-agent';
 

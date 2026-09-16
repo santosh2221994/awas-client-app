@@ -12,4 +12,7 @@ export const ENDPOINTS = {
   AUTH_SIGNUP: '/auth/signup',
   AUTH_LOGIN: '/auth/login',
   AUTH_PROFILE: '/auth/profile',
+  // Crew Studio Workflows (MongoDB collection)
+  CREW_WORKFLOWS: '/workflows',
+  CREW_WORKFLOW_BY_ID: (workflowId) => `/workflows/${workflowId}`,
 };

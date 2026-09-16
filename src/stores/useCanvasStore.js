@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
+import { saveWorkflow, getWorkflow } from '../api/services/workflowService';
 
 export const useCanvasStore = create((set, get) => ({
   nodes: [],
@@ -45,25 +46,43 @@ export const useCanvasStore = create((set, get) => ({
 
   setActiveWorkflowId: (id) => set({ activeWorkflowId: id }),
 
-  saveWorkflowCanvas: (workflowId) => {
+  saveWorkflowCanvas: async (workflowId, initialName = null) => {
     const { nodes, edges } = get();
     try {
-      localStorage.setItem(`canvas_${workflowId}`, JSON.stringify({ nodes, edges }));
+      let name = initialName || `Workflow ${workflowId}`;
+      if (!initialName) {
+        try {
+          const existing = await getWorkflow(workflowId);
+          name = existing?.name || name;
+        } catch { /* new workflow */ }
+      }
+
+      await saveWorkflow({ workflowId, name, nodes, edges });
     } catch (err) {
-      console.warn('[useCanvasStore] Failed to save workflow canvas', err);
+      console.warn('[useCanvasStore] DB save failed, falling back to localStorage', err);
+      try {
+        localStorage.setItem(`canvas_${workflowId}`, JSON.stringify({ nodes, edges }));
+      } catch { }
     }
   },
 
-  loadWorkflowCanvas: (workflowId) => {
+  loadWorkflowCanvas: async (workflowId) => {
     try {
-      const stored = localStorage.getItem(`canvas_${workflowId}`);
-      if (stored) {
-        const { nodes, edges } = JSON.parse(stored);
-        set({ nodes: nodes || [], edges: edges || [], activeWorkflowId: workflowId });
+      const wf = await getWorkflow(workflowId);
+      if (wf) {
+        set({ nodes: wf.nodes || [], edges: wf.edges || [], activeWorkflowId: workflowId });
         return true;
       }
-    } catch (err) {
-      console.warn('[useCanvasStore] Failed to load workflow canvas', err);
+    } catch {
+      // Not in DB — try localStorage fallback
+      try {
+        const stored = localStorage.getItem(`canvas_${workflowId}`);
+        if (stored) {
+          const { nodes, edges } = JSON.parse(stored);
+          set({ nodes: nodes || [], edges: edges || [], activeWorkflowId: workflowId });
+          return true;
+        }
+      } catch { }
     }
     set({ nodes: [], edges: [], activeWorkflowId: workflowId });
     return false;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { getAgentById } from '../../api/services/agentService';
+import { getWorkflow } from '../../api/services/workflowService';
 
 function formatSlugToTitle(slug) {
   if (!slug) return '';
@@ -17,11 +18,10 @@ export default function CanvasHeader() {
   const [agentName, setAgentName] = useState('Agent & Workflow Studio');
   const [agentDesc, setAgentDesc] = useState('Build, test, and deploy your AI agent automation.');
 
-  // Read workflow name/description from localStorage for wf- IDs
-  const loadWorkflowMeta = (wfId) => {
+  // Read workflow name/description from MongoDB for wf- IDs
+  const loadWorkflowMeta = async (wfId) => {
     try {
-      const workflows = JSON.parse(localStorage.getItem('crew_workflows') || '[]');
-      const wf = workflows.find((w) => w.id === wfId);
+      const wf = await getWorkflow(wfId);
       setAgentName(wf?.name || formatSlugToTitle(wfId));
       setAgentDesc(wf?.description || 'Workflow canvas.');
     } catch {
@@ -53,37 +53,38 @@ export default function CanvasHeader() {
       return;
     }
 
+    // All workflow IDs start with "wf-" (set by handleCreateWorkflow)
     if (selectedCrewAgentId.startsWith('wf-')) {
       loadWorkflowMeta(selectedCrewAgentId);
       return;
     }
 
+    // Unknown ID — first try workflow lookup, then agent lookup
     const fallbackTitle = formatSlugToTitle(selectedCrewAgentId);
 
-    getAgentById(selectedCrewAgentId)
-      .then((data) => {
-        setAgentName(data.name || fallbackTitle);
-        setAgentDesc(data.description || 'Build, test, and deploy your AI agent automation.');
+    getWorkflow(selectedCrewAgentId)
+      .then((wf) => {
+        if (wf?.name) {
+          setAgentName(wf.name);
+          setAgentDesc(wf.description || 'Workflow canvas.');
+        } else {
+          throw new Error('no name');
+        }
       })
       .catch(() => {
-        setAgentName(fallbackTitle);
-        setAgentDesc('Build, test, and deploy your AI agent automation.');
+        // Not a workflow — try agent lookup
+        getAgentById(selectedCrewAgentId)
+          .then((data) => {
+            setAgentName(data.name || fallbackTitle);
+            setAgentDesc(data.description || 'Build, test, and deploy your AI agent automation.');
+          })
+          .catch(() => {
+            setAgentName(fallbackTitle);
+            setAgentDesc('Build, test, and deploy your AI agent automation.');
+          });
       });
+
   }, [selectedCrewAgentId, projectTitle]);
-
-  // Reactively update when another part of the app writes to crew_workflows
-  // (e.g. ChatMessage writes the workflow name after user clicks "confirm")
-  useEffect(() => {
-    if (!selectedCrewAgentId?.startsWith('wf-')) return;
-
-    const handleStorage = (e) => {
-      if (e.key === 'crew_workflows') {
-        loadWorkflowMeta(selectedCrewAgentId);
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, [selectedCrewAgentId]);
 
 
   return (

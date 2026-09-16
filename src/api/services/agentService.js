@@ -431,8 +431,8 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
           if (evtType === 'text-delta' || evtType === 'text' || evtType === 'text-start') {
             const text = p.text ?? p.textDelta ?? p.delta ?? p.content ?? parsedJson.textDelta ?? parsedJson.text ?? parsedJson.delta ?? parsedJson.content ?? '';
             if (text) thinkParser.feed(text);
-          } else if (evtType === 'reasoning-delta' || evtType === 'reasoning' || evtType === 'thinking') {
-            const reasoning = p.text ?? p.reasoning ?? p.textDelta ?? p.delta ?? parsedJson.reasoning ?? parsedJson.textDelta ?? parsedJson.text ?? '';
+          } else if (evtType === 'reasoning-delta' || evtType === 'reasoning' || evtType === 'thinking' || evtType === 'reasoning_content') {
+            const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoning_delta ?? p.reasoningDelta ?? p.reasoning ?? p.text ?? p.textDelta ?? p.delta ?? parsedJson.reasoning_content ?? parsedJson.reasoningContent ?? parsedJson.reasoning_delta ?? parsedJson.reasoningDelta ?? parsedJson.reasoning ?? parsedJson.textDelta ?? parsedJson.text ?? '';
             if (reasoning) onReasoning?.(reasoning);
           } else if (evtType === 'finish' || evtType === 'done' || evtType === 'complete' || evtType === 'step-finish') {
             const usage = p.usage ?? parsedJson.usage ?? parsedJson.totalUsage;
@@ -452,14 +452,14 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
               break;
             }
           } else {
-            // Generic object chunk
-            const text = p.text ?? p.textDelta ?? p.delta ?? parsedJson.textDelta ?? parsedJson.delta ?? (typeof parsedJson.text === 'string' ? parsedJson.text : '');
-            if (text) {
-              thinkParser.feed(text);
-            }
-            const reasoning = p.reasoning ?? p.reasoningDelta ?? parsedJson.reasoningDelta ?? (typeof parsedJson.reasoning === 'string' ? parsedJson.reasoning : '');
+            // Generic object chunk — check reasoning fields first
+            const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoning_delta ?? p.reasoningDelta ?? p.reasoning ?? p.thinking ?? p.thought ?? parsedJson.reasoning_content ?? parsedJson.reasoningContent ?? parsedJson.reasoning_delta ?? parsedJson.reasoningDelta ?? parsedJson.reasoning ?? parsedJson.thinking ?? parsedJson.thought ?? (typeof parsedJson.reasoning === 'string' ? parsedJson.reasoning : '');
             if (reasoning) {
               onReasoning?.(reasoning);
+            }
+            const text = p.text ?? p.textDelta ?? p.delta ?? parsedJson.textDelta ?? parsedJson.delta ?? (typeof parsedJson.text === 'string' ? parsedJson.text : '');
+            if (text && !reasoning) {
+              thinkParser.feed(text);
             }
             const usage = p.usage ?? parsedJson.usage;
             const finishReason = p.finishReason ?? parsedJson.finishReason ?? 'stop';
@@ -482,18 +482,23 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
           continue;
         }
 
-        // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD (e.g. 0:"text", 8:[...], e:{...}, d:{...})
+        // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD (e.g. 0:"text", 8:[...], g:"reasoning", e:{...}, d:{...})
         const colonIdx = dataLine.indexOf(':');
         if (colonIdx !== -1) {
           const prefix = dataLine.slice(0, colonIdx);
           const payload = dataLine.slice(colonIdx + 1);
 
-          if (['0', '1', '2', '8', 'e', 'd'].includes(prefix)) {
+          if (['0', '1', '2', '8', 'g', 'r', 'e', 'd'].includes(prefix)) {
             try {
               if (prefix === '0') {
                 const text = JSON.parse(payload);
                 if (typeof text === 'string' && text) {
                   thinkParser.feed(text);
+                }
+              } else if (prefix === 'g' || prefix === 'r') {
+                const text = JSON.parse(payload);
+                if (typeof text === 'string' && text) {
+                  onReasoning?.(text);
                 }
               } else if (prefix === '8') {
                 const steps = JSON.parse(payload);

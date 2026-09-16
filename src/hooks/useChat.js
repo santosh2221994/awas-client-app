@@ -81,7 +81,8 @@ export function useChat(agentId) {
     );
 
     try {
-      await streamChatResponse(resolvedAgentId, apiMessages, threadId, {
+      const backendAgentId = resolvedAgentId.startsWith('wf-') ? 'studio-chat-agent' : resolvedAgentId;
+      await streamChatResponse(backendAgentId, apiMessages, threadId, {
         onToken: (tokenText) => {
           updateMessageContent(assistantMsgId, tokenText);
         },
@@ -93,7 +94,7 @@ export function useChat(agentId) {
         },
         onDone: async () => {
           // Skip thread fetch for workflow sessions — no backend thread exists
-          if (threadId.startsWith('wf-')) {
+          if (resolvedAgentId.startsWith('wf-')) {
             useChatStore.setState((state) => ({
               sessions: state.sessions.map((s) =>
                 s.id === state.activeSessionId

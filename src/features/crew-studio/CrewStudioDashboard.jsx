@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Search, Plus, Bot, ChevronRight,
     PanelRightOpen, PanelRightClose, ShoppingBag,
     Star, X, GitBranch
 } from 'lucide-react';
 import { listAgents } from '../../api/services/agentService';
+import { listWorkflows, saveWorkflow, deleteWorkflow } from '../../api/services/workflowService';
 import { useUIStore } from '../../stores/useUIStore';
 import Button from '../../components/Button';
 import AgentChatPanel from '../chat-sidebar/AgentChatPanel';
@@ -25,13 +26,19 @@ export default function CrewStudioDashboard() {
         return stored ? JSON.parse(stored) : [];
     });
 
-    const [workflows, setWorkflows] = useState(() => {
-        const stored = localStorage.getItem('crew_workflows');
-        return stored ? JSON.parse(stored) : [];
-    });
+    const [workflows, setWorkflows] = useState([]);
+    const [workflowsLoading, setWorkflowsLoading] = useState(true);
     const [showWorkflowModal, setShowWorkflowModal] = useState(false);
     const [wfName, setWfName] = useState('');
     const [wfDesc, setWfDesc] = useState('');
+
+    // Load workflows from MongoDB on mount
+    useEffect(() => {
+        listWorkflows()
+            .then((data) => setWorkflows(Array.isArray(data) ? data : []))
+            .catch(() => setWorkflows([]))
+            .finally(() => setWorkflowsLoading(false));
+    }, []);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newAgentName, setNewAgentName] = useState('');
@@ -41,13 +48,6 @@ export default function CrewStudioDashboard() {
     const [newAgentSell, setNewAgentSell] = useState(false);
     const [newAgentPrice, setNewAgentPrice] = useState('');
 
-    useEffect(() => {
-        localStorage.setItem('custom_agents', JSON.stringify(myListedAgents));
-    }, [myListedAgents]);
-
-    useEffect(() => {
-        localStorage.setItem('crew_workflows', JSON.stringify(workflows));
-    }, [workflows]);
 
     useEffect(() => {
         async function fetchAgentsList() {
@@ -77,34 +77,34 @@ export default function CrewStudioDashboard() {
         return matches && matchesCat;
     });
 
-    const handleCreateWorkflow = (e) => {
+    const handleCreateWorkflow = async (e) => {
         e.preventDefault();
         if (!wfName.trim()) return;
-        const id = `wf-${Date.now()}`;
-        const agent = {
-            id,
+        const workflowId = `wf-${Date.now()}`;
+        const newWf = {
+            workflowId,
+            id: workflowId,
             name: wfName,
-            description: wfDesc || 'Workflow agent',
-            instructions: `You are ${wfName}. ${wfDesc}`,
-            type: 'Workflow',
-            model: 'gpt-4o',
-            tools: [],
+            description: wfDesc || '',
+            nodes: [],
+            edges: [],
+            createdAt: new Date().toISOString(),
         };
-        const newWf = { id, name: wfName, description: wfDesc, createdAt: Date.now(), agent };
-        const updated = [...workflows, newWf];
-        // Write to localStorage SYNCHRONOUSLY before navigating away.
-        // The useEffect fires after render, but setSelectedCrewAgentId unmounts
-        // this component immediately — so the effect would never run without this.
+        // Persist to MongoDB first
         try {
-            localStorage.setItem('crew_workflows', JSON.stringify(updated));
+            await saveWorkflow({ workflowId, name: wfName, description: wfDesc || '', nodes: [], edges: [] });
+            
+            // Optimistically update UI
+            setWorkflows((prev) => [...prev, newWf]);
+            setWfName('');
+            setWfDesc('');
+            setShowWorkflowModal(false);
+            
+            // Then navigate
+            setSelectedCrewAgentId(workflowId);
         } catch (err) {
-            console.warn('[CrewStudioDashboard] Failed to persist new workflow', err);
+            console.warn('[CrewStudioDashboard] Failed to save workflow to DB', err);
         }
-        setWorkflows(updated);
-        setWfName('');
-        setWfDesc('');
-        setShowWorkflowModal(false);
-        setSelectedCrewAgentId(id);
     };
 
 
@@ -266,8 +266,8 @@ export default function CrewStudioDashboard() {
                                 return wf.name?.toLowerCase().includes(q) || wf.description?.toLowerCase().includes(q);
                             }).map((wf) => (
                                 <div
-                                    key={wf.id}
-                                    onClick={() => setSelectedCrewAgentId(wf.id)}
+                                    key={wf.workflowId || wf.id}
+                                    onClick={() => setSelectedCrewAgentId(wf.workflowId || wf.id)}
                                     className="group cursor-pointer border rounded-2xl p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] flex flex-col justify-between min-h-[175px] flex-shrink-0 w-[350px] bg-white border-gray-200 hover:border-indigo-200"
                                 >
                                     <div>

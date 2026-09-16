@@ -68,6 +68,8 @@ function FlowCanvasInner({ nodes, edges, handleNodesChange, handleEdgesChange, o
   );
 }
 
+let canvasSaveTimeout = null;
+
 export default function FlowCanvas() {
   const {
     nodes,
@@ -219,17 +221,24 @@ export default function FlowCanvas() {
     loadWorkflow();
   }, [selectedCrewAgentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save canvas on every node/edge change for wf- workflows
+
+  // Save canvas on node/edge change for wf- workflows, debounced by 1s
   const handleNodesChange = (changes) => {
     onNodesChange(changes);
     const wfId = useCanvasStore.getState().activeWorkflowId;
-    if (wfId) setTimeout(() => saveWorkflowCanvas(wfId), 0);
+    if (wfId) {
+      if (canvasSaveTimeout) clearTimeout(canvasSaveTimeout);
+      canvasSaveTimeout = setTimeout(() => saveWorkflowCanvas(wfId), 1000);
+    }
   };
 
   const handleEdgesChange = (changes) => {
     onEdgesChange(changes);
     const wfId = useCanvasStore.getState().activeWorkflowId;
-    if (wfId) setTimeout(() => saveWorkflowCanvas(wfId), 0);
+    if (wfId) {
+      if (canvasSaveTimeout) clearTimeout(canvasSaveTimeout);
+      canvasSaveTimeout = setTimeout(() => saveWorkflowCanvas(wfId), 1000);
+    }
   };
 
   const onConnect = (params) => {

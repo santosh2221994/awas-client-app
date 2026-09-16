@@ -36,19 +36,21 @@ export default function WorkflowRunnerPanel() {
   const activeAgentNode = agentNodes.length > 0 ? agentNodes[agentNodes.length - 1] : null;
   const activeTaskNode = taskNodes.length > 0 ? taskNodes[taskNodes.length - 1] : null;
 
-  const primaryAgent = activeAgentNode?.data || { name: 'Support Ticket Categorizer & Summarizer', title: 'Support Ticket Categorizer & Summarizer', model: 'Gemma' };
-  const primaryTask = activeTaskNode?.data || { name: 'Task Runner', title: 'Task Runner', description: 'Categorizes tickets and generates summaries.' };
+  const hasWorkflow = agentNodes.length > 0;
 
-  const agentName = primaryAgent.title || primaryAgent.name || 'Support Ticket Categorizer & Summarizer';
-  const taskName = primaryTask.title || primaryTask.name || `Task Runner - ${agentName}`;
-  const modelName = primaryAgent.model || 'Gemma';
+  const primaryAgent = activeAgentNode?.data || {};
+  const primaryTask = activeTaskNode?.data || {};
+
+  const agentName = primaryAgent.title || primaryAgent.name || '';
+  const taskName = primaryTask.title || primaryTask.name || '';
+  const modelName = primaryAgent.model || '';
   const processType = processNode?.data?.processType || 'Sequential';
 
   // Repository agents & options
   const [repoAgents, setRepoAgents] = useState([]);
   const [authAgentCount, setAuthAgentCount] = useState(1);
 
-  const [inputTopic, setInputTopic] = useState(`Retrieve recent support tickets, categorize by urgency using Gemma, and generate summaries.`);
+  const [inputTopic, setInputTopic] = useState('');
   const [executionState, setExecutionState] = useState('idle'); // 'idle' | 'running' | 'completed'
   const [logs, setLogs] = useState([]);
   const [outputResult, setOutputResult] = useState(null);
@@ -182,83 +184,34 @@ Workflow run completed successfully with 0 errors.`;
 
   const currentRunId = `554a24df-${Date.now().toString().slice(-4)}-4c48-885b-1068cb93f3fb`;
 
-  const timelineTasks = agentNodes.length > 0
-    ? agentNodes.map((node, i) => {
-        const title = node.data?.title || node.data?.name || `Agent ${i + 1}`;
-        const isGithub = title.toLowerCase().includes('github') || title.toLowerCase().includes('issue');
-        const subName = isGithub
-          ? (i === 0 ? 'fetch_and_classify_issues' : 'triage_and_post_comments')
-          : `execute_step_${i + 1}`;
-
-        return {
-          id: `task-${i + 1}`,
-          title: title,
-          duration: metrics ? `${metrics.duration} (+1.${20 + i * 15}s)` : `${3.69 + i * 1.4}s (+1.43s)`,
-          subStepName: subName,
-          subDuration: `1.${23 + i * 10}s + 3.70s`,
-          llmLatency: `${821 - i * 140}ms +1.11s`,
-          completedOffset: `+1.${23 + i * 10}s`,
-          rawEvent: {
-            type: i === 0 ? 'execution_started' : (i === agentNodes.length - 1 ? 'execution_finished' : 'task_completed'),
-            run_id: currentRunId,
-            controller: 'crewai_plus/studio_v2/run_events',
-            action: subName,
-            project_id: '4149a919-20b7-4748-86c2-43272f925778',
-            run_event: {
-              type: i === 0 ? 'task_execution_started' : 'llm_call_success',
-              task: title,
-              agent: title,
-              status: '200 OK'
-            }
-          }
-        };
-      })
-    : [
-        {
-          id: 'task-1',
-          title: 'GitHub Issue Analyzer',
-          duration: metrics ? `${metrics.duration} (+1.43s)` : '3.69s (+1.43s)',
-          subStepName: 'fetch_and_classify_issues',
-          subDuration: '1.23s + 3.70s',
-          llmLatency: '821ms +1.11s',
-          completedOffset: '+1.23s',
-          rawEvent: {
-            type: 'execution_started',
-            run_id: currentRunId,
-            controller: 'crewai_plus/studio_v2/run_events',
-            action: 'fetch_and_classify_issues',
-            project_id: '4149a919-20b7-4748-86c2-43272f925778',
-            run_event: {
-              type: 'task_execution_started',
-              task: 'Fetch and Classify New Issues',
-              agent: 'GitHub Issue Analyzer'
-            }
-          }
-        },
-        {
-          id: 'task-2',
-          title: 'GitHub Issue Triage Manager',
-          duration: '5.11s (+0.54s)',
-          subStepName: 'triage_and_post_comments',
-          subDuration: '0.54s + 5.11s',
-          llmLatency: '377ms + 0.53s',
-          completedOffset: '+0.54s',
-          rawEvent: {
-            type: 'task_completed',
-            run_id: currentRunId,
-            controller: 'crewai_plus/studio_v2/run_events',
-            action: 'triage_and_post_comments',
-            project_id: '4149a919-20b7-4748-86c2-43272f925778',
-            run_event: {
-              type: 'llm_call_success',
-              latency: '377ms',
-              status: '200 OK'
-            }
-          }
+  const timelineTasks = agentNodes.map((node, i) => {
+    const title = node.data?.title || node.data?.name || `Agent ${i + 1}`;
+    const subName = `execute_step_${i + 1}`;
+    return {
+      id: `task-${i + 1}`,
+      title: title,
+      duration: metrics ? `${metrics.duration} (+1.${20 + i * 15}s)` : `${(3.69 + i * 1.4).toFixed(2)}s (+1.43s)`,
+      subStepName: subName,
+      subDuration: `1.${23 + i * 10}s + 3.70s`,
+      llmLatency: `${821 - i * 140}ms +1.11s`,
+      completedOffset: `+1.${23 + i * 10}s`,
+      rawEvent: {
+        type: i === 0 ? 'execution_started' : (i === agentNodes.length - 1 ? 'execution_finished' : 'task_completed'),
+        run_id: currentRunId,
+        controller: 'crewai_plus/studio_v2/run_events',
+        action: subName,
+        project_id: '4149a919-20b7-4748-86c2-43272f925778',
+        run_event: {
+          type: i === 0 ? 'task_execution_started' : 'llm_call_success',
+          task: title,
+          agent: title,
+          status: '200 OK'
         }
-      ];
+      }
+    };
+  });
 
-  const activeRawData = selectedTimelineItem ? selectedTimelineItem.rawEvent : timelineTasks[0].rawEvent;
+  const activeRawData = selectedTimelineItem ? selectedTimelineItem.rawEvent : timelineTasks[0]?.rawEvent ?? null;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden font-sans">
@@ -269,48 +222,70 @@ Workflow run completed successfully with 0 errors.`;
             <Bot className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-gray-900">{agentName}</span>
-              <Badge variant="indigo">{modelName}</Badge>
-              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                Auth Verified
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500">{taskName}</p>
+            {hasWorkflow ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-900">{agentName}</span>
+                {modelName && <Badge variant="indigo">{modelName}</Badge>}
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                  Auth Verified
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs font-bold text-gray-400">No workflow configured</span>
+            )}
+            {hasWorkflow && taskName && <p className="text-[11px] text-gray-500">{taskName}</p>}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 border-r border-gray-200 pr-3">
-            <span className="text-[11px] text-gray-500 font-medium">Auth Agents:</span>
-            <select
-              value={authAgentCount}
-              onChange={(e) => setAuthAgentCount(Number(e.target.value))}
-              className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs font-bold text-gray-800 outline-none hover:bg-gray-50 cursor-pointer"
-            >
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>{n} Agent{n > 1 ? 's' : ''}</option>
-              ))}
-            </select>
-          </div>
+          {hasWorkflow && (
+            <div className="flex items-center gap-2 border-r border-gray-200 pr-3">
+              <span className="text-[11px] text-gray-500 font-medium">Auth Agents:</span>
+              <select
+                value={authAgentCount}
+                onChange={(e) => setAuthAgentCount(Number(e.target.value))}
+                className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs font-bold text-gray-800 outline-none hover:bg-gray-50 cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>{n} Agent{n > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <Button
             variant="brand"
             size="sm"
             icon={Play}
-            disabled={executionState === 'running'}
+            disabled={!hasWorkflow || executionState === 'running'}
             onClick={handleExecute}
-            className="text-xs font-bold px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+            className="text-xs font-bold px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {executionState === 'running' ? 'Running Crew...' : 'Run'}
           </Button>
         </div>
       </div>
 
-      {/* Main Studio v2 Execution View Split Pane */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Pane: Interactive Execution Timeline (matching Screenshot 2) */}
-        <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col h-full overflow-y-auto p-6 space-y-6">
+      {/* Empty state — no workflow built yet */}
+      {!hasWorkflow ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8 select-none">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+            <Layers className="w-8 h-8 text-slate-300" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-700">No workflow built yet</p>
+            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+              Switch to the <span className="font-semibold text-indigo-500">Canvas</span> tab and add agents &amp; tasks<br />
+              to your workflow, then come back to run it.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+        {/* Main Studio v2 Execution View Split Pane */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Pane: Interactive Execution Timeline (matching Screenshot 2) */}
+          <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col h-full overflow-y-auto p-6 space-y-6">
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-indigo-500" />
@@ -520,6 +495,8 @@ Workflow run completed successfully with 0 errors.`;
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

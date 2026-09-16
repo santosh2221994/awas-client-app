@@ -4,6 +4,7 @@ import ReasoningPanel from './ReasoningPanel';
 import { Zap, CheckCircle2, Play, Sparkles, Bot, Plus, Search } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { saveWorkflow } from '../../api/services/workflowService';
 
 /**
  * Extracts and validates workflow/node JSON schema from assistant messages.
@@ -17,7 +18,12 @@ import { useUIStore } from '../../stores/useUIStore';
 function extractAndValidateNodeSchema(content) {
   if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
 
-  let cleanText = content.replace(/\[\/?(CANVAS_ACTION|AGENT_ACTION)\]/gi, '').trim();
+  // Strip entire [CANVAS_ACTION]...[/CANVAS_ACTION] blocks, or [CANVAS_ACTION] ... to end of string
+  let cleanText = content
+    .replace(/\[(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*?\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]/gi, '')
+    .replace(/\[(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*/gi, '')
+    .replace(/\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]/gi, '')
+    .trim();
   let actions = null;
 
   // Helper: try to parse a string as JSON, return null on failure
@@ -39,7 +45,7 @@ function extractAndValidateNodeSchema(content) {
       if (parsed) {
         const arr = Array.isArray(parsed) ? parsed : [parsed];
         if (isValidActions(arr)) {
-          cleanText = content.replace(/\[\/?(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*?(?:\[\/?(?:CANVAS_ACTION|AGENT_ACTION)\]|$)/gi, '').trim();
+          // cleanText is already stripped at top of function
           return { actions: arr, cleanText: cleanText || 'Action plan generated for canvas.' };
         }
       }
@@ -154,11 +160,10 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
 
   const isCheckingExisting = useMemo(() => {
     if (isUser) return false;
-    if (messageIndex > 1) return false;
     if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
     const lower = (content || '').toLowerCase();
     return lower.includes('checkexistingagents') || (lower.includes('search') && lower.includes('agent'));
-  }, [isUser, nodeActions, content, messageIndex]);
+  }, [isUser, nodeActions, content]);
 
   const matchedExistingAgents = useMemo(() => {
     if (!isCheckingExisting) return [];
@@ -202,7 +207,7 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
     }
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!nodeActions || isApplied) return;
 
     // Ensure the active workflow ID is set so applyNodeActions can save
@@ -218,32 +223,36 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
 
     // If user is not already on the canvas, navigate there
     if (!selectedCrewAgentId?.startsWith('wf-')) {
-      // Create a new workflow and navigate into it
+      // Create a new workflow in MongoDB and navigate into it
       const wfId = `wf-${Date.now()}`;
-      const stored = localStorage.getItem('crew_workflows');
-      const workflows = stored ? JSON.parse(stored) : [];
       const firstName = nodeActions.find(a => a.name)?.name || 'New Workflow';
-      workflows.push({ id: wfId, name: firstName, description: '', createdAt: Date.now(), agent: { id: wfId, name: firstName } });
-      localStorage.setItem('crew_workflows', JSON.stringify(workflows));
       canvasStore.setActiveWorkflowId(wfId);
-      setTimeout(() => canvasStore.saveWorkflowCanvas(wfId), 0);
+      await canvasStore.saveWorkflowCanvas(wfId, firstName);
       setSelectedCrewAgentId(wfId);
     }
   };
 
   const formatContent = (text) => {
     if (!text) return null;
-    // Basic Markdown parser for **bold** text and `inline code`
-    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={index} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={index} className="font-mono text-xs bg-gray-100 text-indigo-600 px-1 py-0.5 rounded">{part.slice(1, -1)}</code>;
-      }
-      return part;
+    // Split on newlines first, then apply inline markdown to each line
+    const lines = text.split('\n');
+    const result = [];
+    lines.forEach((line, lineIdx) => {
+      if (lineIdx > 0) result.push(<br key={`br-${lineIdx}`} />);
+      // Apply inline markdown: **bold** and `code`
+      const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+      parts.forEach((part, partIdx) => {
+        const key = `${lineIdx}-${partIdx}`;
+        if (part.startsWith('**') && part.endsWith('**')) {
+          result.push(<strong key={key} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>);
+        } else if (part.startsWith('`') && part.endsWith('`')) {
+          result.push(<code key={key} className="font-mono text-xs bg-gray-100 text-indigo-600 px-1 py-0.5 rounded">{part.slice(1, -1)}</code>);
+        } else {
+          result.push(<React.Fragment key={key}>{part}</React.Fragment>);
+        }
+      });
     });
+    return result;
   };
 
   const formattedTime = timestamp
@@ -258,7 +267,7 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
         {/* Reasoning / thinking panel for assistant messages */}
         {!isUser && (
           <ReasoningPanel
-            isThinking={isThinking || (isStreaming && !content && !reasoning)}
+            isThinking={isThinking || (isStreaming && !content)}
             reasoning={reasoning}
           />
         )}
