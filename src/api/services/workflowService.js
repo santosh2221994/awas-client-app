@@ -11,10 +11,7 @@ import { ENDPOINTS } from '../endpoints';
  * @returns {Promise<Array>}
  */
 export function listWorkflows() {
-  return client.get(ENDPOINTS.CREW_WORKFLOWS).catch((err) => {
-    console.warn('[workflowService] listWorkflows failed, returning []', err);
-    return [];
-  });
+  return client.get(ENDPOINTS.CREW_WORKFLOWS);
 }
 
 /**

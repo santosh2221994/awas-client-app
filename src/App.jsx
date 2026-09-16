@@ -5,6 +5,7 @@ import RightPanel from './features/right-panel/RightPanel';
 import AuthPage from './features/auth/AuthPage';
 import { useUIStore } from './stores/useUIStore';
 import { useSessionStore } from './stores/useSessionStore';
+import client from './api/client';
 
 const AgentsRepository = lazy(() => import('./features/agents/AgentsRepository'));
 const AgentDetail = lazy(() => import('./features/agents/AgentDetail'));
@@ -33,7 +34,15 @@ function LoadingFallback() {
 
 export default function App() {
   const { activeNavItem, selectedAgentId, selectedCrewAgentId } = useUIStore();
-  const { isAuthenticated } = useSessionStore();
+  const { isAuthenticated, isHydrating, login, setHydrating } = useSessionStore();
+
+  // On mount: attempt silent token refresh using the httpOnly cookie.
+  // If the cookie is present and valid, the user is logged in without needing localStorage.
+  useEffect(() => {
+    client.post('/auth/refresh')
+      .then((res) => login(res.user, res.access_token))
+      .catch(() => setHydrating(false));
+  }, []);
 
   // URL Hash to Store State Synchronizer
   useEffect(() => {
@@ -77,6 +86,14 @@ export default function App() {
       window.location.hash = newHash;
     }
   }, [activeNavItem, selectedAgentId, selectedCrewAgentId, isAuthenticated]);
+
+  if (isHydrating) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
+        <div className="w-5 h-5 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AuthPage />;
