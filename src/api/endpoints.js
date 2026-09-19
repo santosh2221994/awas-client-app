@@ -41,5 +41,17 @@ export const ENDPOINTS = {
   // Crew Studio Workflows (MongoDB collection)
   CREW_WORKFLOWS: '/workflows',
   CREW_WORKFLOW_BY_ID: (workflowId) => `/workflows/${workflowId}`,
+
+  // ── Settings Module (MongoDB Collections) ─────────────────────────────────
+  SETTINGS: '/settings',
+  SETTINGS_PROFILE: '/settings/profile',
+  SETTINGS_ORGANIZATION: '/settings/organization',
+  SETTINGS_NOTIFICATIONS: '/settings/notifications',
+  SETTINGS_APPEARANCE: '/settings/appearance',
+  SETTINGS_REGION: '/settings/region',
+  SETTINGS_SECURITY_PASSWORD: '/settings/security/password',
+  SETTINGS_SECURITY_2FA_TOGGLE: '/settings/security/2fa/toggle',
+  SETTINGS_SECURITY_TOKENS: '/settings/security/tokens',
+  SETTINGS_SECURITY_TOKEN_DELETE: (tokenId) => `/settings/security/tokens/${tokenId}`,
 };
 

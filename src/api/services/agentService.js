@@ -58,12 +58,25 @@ function getLocalAgents() {
 }
 
 function normalizeAgentKey(agent) {
-  const idStr = (agent.id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-  const nameStr = (agent.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const idStr = String(agent?.id || '').toLowerCase();
+  const nameStr = String(agent?.name || '').toLowerCase();
   if (idStr.includes('agentbuild') || nameStr.includes('agentbuild')) {
     return 'agent-builder-agent';
   }
-  return idStr || nameStr;
+  return (idStr || nameStr).replace(/[^a-z0-9]/g, '');
+}
+
+function dedupeAgents(list) {
+  const seen = new Set();
+  const unique = [];
+  for (const item of list) {
+    const key = normalizeAgentKey(item);
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      unique.push(item);
+    }
+  }
+  return unique;
 }
 
 export function listAgents() {
@@ -92,31 +105,11 @@ export function listAgents() {
         };
       });
 
-      const combined = [...getLocalAgents(), ...apiAgents];
-      const seen = new Set();
-      const unique = [];
-      for (const item of combined) {
-        const key = normalizeAgentKey(item);
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          unique.push(item);
-        }
-      }
-      return unique;
+      return dedupeAgents([...getLocalAgents(), ...apiAgents]);
     })
     .catch((err) => {
       console.warn('[listAgents] failed, falling back to local agents', err);
-      const combined = getLocalAgents();
-      const seen = new Set();
-      const unique = [];
-      for (const item of combined) {
-        const key = normalizeAgentKey(item);
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          unique.push(item);
-        }
-      }
-      return unique;
+      return dedupeAgents(getLocalAgents());
     });
 }
 
@@ -224,18 +217,195 @@ export function generateAgentResponse(agentId, messages, threadId) {
  * Parses the Vercel AI SDK wire protocol emitted by Mastra:
  *   0:"token"          → text delta
  *   8:[{reasoning}]    → reasoning/thinking steps
- *   e:{usage:{...}}   → step finish with token usage
- *   d:{...}            → done / stream end
+/**
+ * Creates a stateful parser for streaming `<think>…</think>` reasoning tags.
+ */
+function createThinkTagParser(onToken, onReasoning) {
+  let isThinking = false;
+  let buffer = '';
+
+  return {
+    feed(chunk) {
+      if (!chunk) return;
+      let text = buffer + chunk;
+      buffer = '';
+
+      while (text.length > 0) {
+        if (!isThinking) {
+          const openIdx = text.indexOf('<think>');
+          if (openIdx === -1) {
+            // Check for partial opening tag at the end
+            const match = text.match(/<t?(?:h(?:i(?:n(?:k)?)?)?)?$/i);
+            if (match) {
+              const safeText = text.slice(0, match.index);
+              if (safeText) onToken?.(safeText);
+              buffer = text.slice(match.index);
+            } else {
+              onToken?.(text);
+            }
+            break;
+          } else {
+            if (openIdx > 0) onToken?.(text.slice(0, openIdx));
+            isThinking = true;
+            text = text.slice(openIdx + 7);
+          }
+        } else {
+          const closeIdx = text.indexOf('</think>');
+          if (closeIdx === -1) {
+            // Check for partial closing tag at the end
+            const match = text.match(/<\/?t?(?:h(?:i(?:n(?:k)?)?)?)?$/i);
+            if (match) {
+              const safeReasoning = text.slice(0, match.index);
+              if (safeReasoning) onReasoning?.(safeReasoning);
+              buffer = text.slice(match.index);
+            } else {
+              onReasoning?.(text);
+            }
+            break;
+          } else {
+            if (closeIdx > 0) onReasoning?.(text.slice(0, closeIdx));
+            isThinking = false;
+            text = text.slice(closeIdx + 8);
+          }
+        }
+      }
+    },
+    flush() {
+      if (buffer) {
+        if (isThinking) {
+          onReasoning?.(buffer);
+        } else {
+          onToken?.(buffer);
+        }
+        buffer = '';
+      }
+    },
+  };
+}
+
+/**
+ * Dispatches a single decoded SSE data line to the appropriate callback.
+ * Returns true if the stream was marked completed or errored.
+ */
+function dispatchSSELine(dataLine, thinkParser, callbacks, startTime) {
+  const { onToken, onReasoning, onUsage, onError, onDone } = callbacks;
+
+  // 1. Mastra JSON event format (e.g. {"type":"text-delta","payload":{"textDelta":"..."}})
+  if (dataLine.startsWith('{') && dataLine.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(dataLine);
+      const evtType = parsed.type;
+      const p = parsed.payload ?? parsed;
+
+      if (evtType === 'text-delta' || evtType === 'text' || evtType === 'text-start') {
+        const text = p.textDelta ?? p.text ?? p.delta ?? p.content ?? '';
+        if (text) thinkParser.feed(text);
+        return false;
+      }
+      if (evtType === 'reasoning-delta' || evtType === 'reasoning' || evtType === 'thinking' || evtType === 'reasoning_content') {
+        const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoningDelta ?? p.reasoning ?? '';
+        if (reasoning) onReasoning?.(reasoning);
+        return false;
+      }
+      if (evtType === 'finish' || evtType === 'done' || evtType === 'complete' || evtType === 'step-finish') {
+        const usage = p.usage ?? parsed.usage ?? parsed.totalUsage;
+        if (usage) {
+          onUsage?.({
+            promptTokens: usage.promptTokens ?? usage.inputTokens ?? usage.prompt_tokens ?? 0,
+            completionTokens: usage.completionTokens ?? usage.outputTokens ?? usage.completion_tokens ?? 0,
+            finishReason: p.finishReason ?? parsed.finishReason ?? 'stop',
+            duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+          });
+        }
+        if (evtType !== 'step-finish') {
+          onDone?.();
+          return true;
+        }
+        return false;
+      }
+
+      // Generic object fallback
+      const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoningDelta ?? p.reasoning ?? p.thinking;
+      if (reasoning) onReasoning?.(reasoning);
+      const text = p.textDelta ?? p.text ?? p.delta ?? p.content;
+      if (text && !reasoning) thinkParser.feed(text);
+      return false;
+    } catch {}
+  }
+
+  // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD
+  const colonIdx = dataLine.indexOf(':');
+  if (colonIdx === 1) {
+    const prefix = dataLine[0];
+    const payload = dataLine.slice(2);
+
+    try {
+      if (prefix === '0') {
+        const text = JSON.parse(payload);
+        if (typeof text === 'string' && text) thinkParser.feed(text);
+      } else if (prefix === 'g' || prefix === 'r') {
+        const text = JSON.parse(payload);
+        if (typeof text === 'string' && text) onReasoning?.(text);
+      } else if (prefix === '8') {
+        const steps = JSON.parse(payload);
+        if (Array.isArray(steps)) {
+          for (const step of steps) {
+            const reasoning = step?.details?.find?.((d) => d.type === 'text')?.text ?? step?.reasoning ?? step?.text;
+            if (reasoning) onReasoning?.(reasoning);
+          }
+        }
+      } else if (prefix === 'e' || prefix === 'd') {
+        const data = JSON.parse(payload);
+        if (data?.usage) {
+          onUsage?.({
+            promptTokens: data.usage.promptTokens ?? data.usage.prompt_tokens ?? 0,
+            completionTokens: data.usage.completionTokens ?? data.usage.completion_tokens ?? 0,
+            finishReason: data.finishReason ?? 'stop',
+            duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
+          });
+        }
+        if (prefix === 'd') {
+          onDone?.();
+          return true;
+        }
+      } else if (prefix === '3') {
+        let errMsg = payload;
+        try {
+          const parsed = JSON.parse(payload);
+          errMsg = typeof parsed === 'string' ? parsed : parsed?.message || payload;
+        } catch {
+          if (errMsg.startsWith('"') && errMsg.endsWith('"')) errMsg = errMsg.slice(1, -1);
+        }
+        onError?.(new Error(errMsg));
+        onDone?.();
+        return true;
+      }
+    } catch {}
+    return false;
+  }
+
+  // 3. Fallback raw text line (if not an alphanumeric prefix code)
+  if (!/^[0-9a-z]:/i.test(dataLine)) {
+    thinkParser.feed(dataLine);
+  }
+  return false;
+}
+
+/**
+ * Streaming generate — uses fetch with `Accept: text/event-stream`.
+ *
+ * Efficiently decodes SSE lines, thinking tags (`<think>…</think>`),
+ * Vercel AI SDK wire protocol prefixes, and Mastra event stream payloads.
  *
  * @param {string} agentId
  * @param {Array}  messages
  * @param {string} threadId
  * @param {{
- *   onToken: (text: string) => void,
- *   onReasoning: (text: string) => void,
- *   onUsage: (usage: {promptTokens: number, completionTokens: number}) => void,
- *   onDone: () => void,
- *   onError: (err: Error) => void,
+ *   onToken?: (text: string) => void,
+ *   onReasoning?: (text: string) => void,
+ *   onUsage?: (usage: {promptTokens: number, completionTokens: number, duration: string}) => void,
+ *   onDone?: () => void,
+ *   onError?: (err: Error) => void,
  * }} callbacks
  */
 export async function streamAgentGenerate(agentId, messages, threadId, callbacks = {}) {
@@ -243,28 +413,39 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
   const startTime = Date.now();
 
   const token = useSessionStore.getState().token;
-  // Bypass Vite proxy for streaming — call NestJS backend directly so SSE
-  // chunks are not buffered by the proxy before reaching the browser.
   const rawBackendURL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || '/api';
   const backendURL = rawBackendURL.replace(/\/+$/, '');
 
+  const payload = JSON.stringify({
+    messages,
+    memory: {
+      thread: threadId,
+      resource: 'default-user',
+    },
+  });
+
+  const headers = {
+    'Content-Type': 'application/json',
+    Accept: 'text/event-stream',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
   let response;
   try {
-    response = await fetch(`${backendURL}/ai/agents/${agentId}/generate`, {
+    response = await fetch(`${backendURL}/ai/agents/${agentId}/stream`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({
-        messages,
-        memory: {
-          thread: threadId,
-          resource: 'default-user',
-        },
-      }),
+      headers,
+      body: payload,
     });
+
+    if (response.status === 404) {
+      // Fallback for older backend route
+      response = await fetch(`${backendURL}/ai/agents/${agentId}/generate`, {
+        method: 'POST',
+        headers,
+        body: payload,
+      });
+    }
   } catch (err) {
     onError?.(err);
     return;
@@ -272,14 +453,17 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
 
   if (!response.ok) {
     let msg = `HTTP ${response.status}`;
-    try { const j = await response.json(); msg = j?.error || msg; } catch { }
+    try {
+      const j = await response.json();
+      msg = j?.error || j?.message || msg;
+    } catch {}
     onError?.(new Error(msg));
     return;
   }
 
   const responseContentType = response.headers.get('content-type') ?? '';
 
-  // If backend returned JSON instead of SSE (e.g. fallback path), handle inline
+  // Non-streaming JSON fallback
   if (!responseContentType.includes('event-stream') && !responseContentType.includes('text/plain')) {
     try {
       const json = await response.json();
@@ -294,7 +478,9 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
         });
       }
       onDone?.();
-    } catch { onError?.(new Error('Failed to parse response')); }
+    } catch {
+      onError?.(new Error('Failed to parse response'));
+    }
     return;
   }
 
@@ -315,99 +501,25 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
     }
   };
 
-  /**
-   * ThinkTagParser — stateful parser for streaming `<think>…</think>` tags.
-   *
-   * GLM-4 / ZhipuAI thinking models emit reasoning inside `<think>` tags
-   * in the regular text stream (prefix `0:`). This parser routes content
-   * between those tags to onReasoning, and everything else to onToken.
-   *
-   * State machine:
-   *   NORMAL  → accumulates regular text until "<think>" is seen
-   *   THINKING → accumulates reasoning text until "</think>" is seen
-   *
-   * Works across chunk boundaries (partial tags are buffered).
-   */
-  const thinkParser = (() => {
-    let state = 'NORMAL'; // 'NORMAL' | 'THINKING'
-    let partial = '';     // incomplete tag fragment at chunk boundary
-
-    return {
-      feed(chunk) {
-        let input = partial + chunk;
-        partial = '';
-
-        while (input.length > 0) {
-          if (state === 'NORMAL') {
-            const openIdx = input.indexOf('<think>');
-            if (openIdx === -1) {
-              // No opening tag — check if input ends with a partial tag prefix
-              const tagStart = ['<', '<t', '<th', '<thi', '<thin', '<think'].findIndex(
-                p => input.endsWith(p)
-              );
-              if (tagStart !== -1) {
-                const safeText = input.slice(0, input.length - ['<', '<t', '<th', '<thi', '<thin', '<think'][tagStart].length);
-                if (safeText) onToken?.(safeText);
-                partial = input.slice(input.length - ['<', '<t', '<th', '<thi', '<thin', '<think'][tagStart].length);
-              } else {
-                if (input) onToken?.(input);
-              }
-              break;
-            } else {
-              // Flush text before the tag
-              if (openIdx > 0) onToken?.(input.slice(0, openIdx));
-              state = 'THINKING';
-              input = input.slice(openIdx + '<think>'.length);
-            }
-          } else {
-            // state === 'THINKING'
-            const closeIdx = input.indexOf('</think>');
-            if (closeIdx === -1) {
-              // Check for partial closing tag at end
-              const closing = '</think>';
-              let partialMatch = '';
-              for (let i = closing.length - 1; i >= 1; i--) {
-                if (input.endsWith(closing.slice(0, i))) {
-                  partialMatch = closing.slice(0, i);
-                  break;
-                }
-              }
-              const safeReasoning = input.slice(0, input.length - partialMatch.length);
-              if (safeReasoning) onReasoning?.(safeReasoning);
-              partial = partialMatch;
-              break;
-            } else {
-              // Flush reasoning up to closing tag
-              if (closeIdx > 0) onReasoning?.(input.slice(0, closeIdx));
-              state = 'NORMAL';
-              input = input.slice(closeIdx + '</think>'.length);
-            }
-          }
-        }
-      },
-    };
-  })();
+  const thinkParser = createThinkTagParser(onToken, onReasoning);
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
-        // Stream fully consumed — always fire onDone
+        thinkParser.flush();
         emitDone();
         break;
       }
 
       buffer += decoder.decode(value, { stream: true });
-
-      // Process all complete lines in the buffer
       const lines = buffer.split('\n');
-      buffer = lines.pop() ?? ''; // Keep the last partial line
+      buffer = lines.pop() ?? '';
 
       for (const line of lines) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith(':')) continue; // skip empty lines / SSE comments
+        if (!trimmed || trimmed.startsWith(':')) continue;
 
-        // Strip standard SSE 'data: ' prefix that Mastra adds
         const dataLine = trimmed.startsWith('data: ')
           ? trimmed.slice(6)
           : trimmed.startsWith('data:')
@@ -416,156 +528,12 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
 
         if (!dataLine || dataLine === '[DONE]') continue;
 
-        // 1. Try parsing as JSON (Mastra EventStream format e.g. {"type":"text-delta","textDelta":"..."})
-        let parsedJson = null;
-        try {
-          parsedJson = JSON.parse(dataLine);
-        } catch {
-          parsedJson = null;
+        const isFinished = dispatchSSELine(dataLine, thinkParser, callbacks, startTime);
+        if (isFinished) {
+          doneEmitted = true;
+          try { reader.cancel(); } catch {}
+          return;
         }
-
-        if (parsedJson !== null && typeof parsedJson === 'object') {
-          const evtType = parsedJson.type;
-          const p = parsedJson.payload ?? {};
-
-          if (evtType === 'text-delta' || evtType === 'text' || evtType === 'text-start') {
-            const text = p.text ?? p.textDelta ?? p.delta ?? p.content ?? parsedJson.textDelta ?? parsedJson.text ?? parsedJson.delta ?? parsedJson.content ?? '';
-            if (text) thinkParser.feed(text);
-          } else if (evtType === 'reasoning-delta' || evtType === 'reasoning' || evtType === 'thinking' || evtType === 'reasoning_content') {
-            const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoning_delta ?? p.reasoningDelta ?? p.reasoning ?? p.text ?? p.textDelta ?? p.delta ?? parsedJson.reasoning_content ?? parsedJson.reasoningContent ?? parsedJson.reasoning_delta ?? parsedJson.reasoningDelta ?? parsedJson.reasoning ?? parsedJson.textDelta ?? parsedJson.text ?? '';
-            if (reasoning) onReasoning?.(reasoning);
-          } else if (evtType === 'finish' || evtType === 'done' || evtType === 'complete' || evtType === 'step-finish') {
-            const usage = p.usage ?? parsedJson.usage ?? parsedJson.totalUsage;
-            const finishReason = p.finishReason ?? parsedJson.finishReason ?? 'stop';
-            if (usage) {
-              onUsage?.({
-                promptTokens: usage.promptTokens ?? usage.inputTokens ?? usage.prompt_tokens ?? 0,
-                completionTokens: usage.completionTokens ?? usage.outputTokens ?? usage.completion_tokens ?? 0,
-                finishReason,
-                time: Date.now(),
-                duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
-              });
-            }
-            if (evtType === 'finish' || evtType === 'done' || evtType === 'complete') {
-              emitDone();
-              try { reader.cancel(); } catch (e) { }
-              break;
-            }
-          } else {
-            // Generic object chunk — check reasoning fields first
-            const reasoning = p.reasoning_content ?? p.reasoningContent ?? p.reasoning_delta ?? p.reasoningDelta ?? p.reasoning ?? p.thinking ?? p.thought ?? parsedJson.reasoning_content ?? parsedJson.reasoningContent ?? parsedJson.reasoning_delta ?? parsedJson.reasoningDelta ?? parsedJson.reasoning ?? parsedJson.thinking ?? parsedJson.thought ?? (typeof parsedJson.reasoning === 'string' ? parsedJson.reasoning : '');
-            if (reasoning) {
-              onReasoning?.(reasoning);
-            }
-            const text = p.text ?? p.textDelta ?? p.delta ?? parsedJson.textDelta ?? parsedJson.delta ?? (typeof parsedJson.text === 'string' ? parsedJson.text : '');
-            if (text && !reasoning) {
-              thinkParser.feed(text);
-            }
-            const usage = p.usage ?? parsedJson.usage;
-            const finishReason = p.finishReason ?? parsedJson.finishReason ?? 'stop';
-            if (usage) {
-              onUsage?.({
-                promptTokens: usage.promptTokens ?? usage.inputTokens ?? usage.prompt_tokens ?? 0,
-                completionTokens: usage.completionTokens ?? usage.outputTokens ?? usage.completion_tokens ?? 0,
-                finishReason,
-                time: Date.now(),
-                duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
-              });
-            }
-          }
-          continue;
-        }
-
-
-        if (typeof parsedJson === 'string') {
-          thinkParser.feed(parsedJson);
-          continue;
-        }
-
-        // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD (e.g. 0:"text", 8:[...], 3:"error", g:"reasoning", e:{...}, d:{...})
-        const colonIdx = dataLine.indexOf(':');
-        if (colonIdx !== -1) {
-          const prefix = dataLine.slice(0, colonIdx);
-          const payload = dataLine.slice(colonIdx + 1);
-
-          if (['0', '1', '2', '3', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'r'].includes(prefix)) {
-            try {
-              if (prefix === '0') {
-                const text = JSON.parse(payload);
-                if (typeof text === 'string' && text) {
-                  thinkParser.feed(text);
-                }
-              } else if (prefix === '3') {
-                let errMsg = payload;
-                try {
-                  const parsed = JSON.parse(payload);
-                  errMsg = typeof parsed === 'string' ? parsed : (parsed?.message || payload);
-                } catch {
-                  if (errMsg.startsWith('"') && errMsg.endsWith('"')) {
-                    errMsg = errMsg.slice(1, -1);
-                  }
-                }
-                onError?.(new Error(errMsg));
-                emitDone();
-                try { reader.cancel(); } catch (e) { }
-                break;
-              } else if (prefix === 'g' || prefix === 'r') {
-                const text = JSON.parse(payload);
-                if (typeof text === 'string' && text) {
-                  onReasoning?.(text);
-                }
-              } else if (prefix === '8') {
-                const steps = JSON.parse(payload);
-                if (Array.isArray(steps)) {
-                  for (const step of steps) {
-                    const reasoning =
-                      step?.details?.find?.(d => d.type === 'text')?.text ??
-                      step?.reasoning ??
-                      step?.text ??
-                      '';
-                    if (reasoning) onReasoning?.(reasoning);
-                  }
-                }
-              } else if (prefix === 'e') {
-                const data = JSON.parse(payload);
-                if (data?.usage) {
-                  onUsage?.({
-                    promptTokens: data.usage.promptTokens ?? data.usage.prompt_tokens ?? 0,
-                    completionTokens: data.usage.completionTokens ?? data.usage.completion_tokens ?? 0,
-                    finishReason: data.finishReason ?? 'stop',
-                    time: Date.now(),
-                    duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
-                  });
-                }
-              } else if (prefix === 'd') {
-                try {
-                  const data = JSON.parse(payload);
-                  if (data?.usage) {
-                    onUsage?.({
-                      promptTokens: data.usage.promptTokens ?? data.usage.prompt_tokens ?? 0,
-                      completionTokens: data.usage.completionTokens ?? data.usage.completion_tokens ?? 0,
-                      finishReason: data.finishReason ?? 'stop',
-                      time: Date.now(),
-                      duration: ((Date.now() - startTime) / 1000).toFixed(1) + 's',
-                    });
-                  }
-                } catch { }
-                emitDone();
-                try { reader.cancel(); } catch (e) { }
-                break;
-              }
-            } catch {
-              // Ignore parse errors on malformed payloads
-            }
-            continue;
-          }
-        }
-
-        // 3. Fallback raw text string (only if not a wire protocol code)
-        if (!/^[0-9a-z]:/i.test(dataLine)) {
-          thinkParser.feed(dataLine);
-        }
-
       }
     }
   } catch (err) {

@@ -50,3 +50,24 @@ export function updateWorkflow(workflowId, data) {
 export function deleteWorkflow(workflowId) {
   return client.delete(ENDPOINTS.CREW_WORKFLOW_BY_ID(workflowId));
 }
+
+/**
+ * Fetch Mastra workflows exposed via NestJS AI proxy (/ai/workflows).
+ * @returns {Promise<Array>}
+ */
+export function listMastraWorkflows() {
+  return client.get(ENDPOINTS.WORKFLOWS).catch((err) => {
+    console.warn('[workflowService] listMastraWorkflows failed', err);
+    return [];
+  });
+}
+
+/**
+ * Run a Mastra workflow via NestJS AI proxy (/ai/workflows/:id/run).
+ * @param {string} workflowId
+ * @param {Object} input
+ * @returns {Promise<Object>}
+ */
+export function runMastraWorkflow(workflowId, input = {}) {
+  return client.post(ENDPOINTS.WORKFLOW_RUN(workflowId), input);
+}
