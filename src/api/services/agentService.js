@@ -482,19 +482,33 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
           continue;
         }
 
-        // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD (e.g. 0:"text", 8:[...], g:"reasoning", e:{...}, d:{...})
+        // 2. Vercel AI SDK wire protocol format: PREFIX:PAYLOAD (e.g. 0:"text", 8:[...], 3:"error", g:"reasoning", e:{...}, d:{...})
         const colonIdx = dataLine.indexOf(':');
         if (colonIdx !== -1) {
           const prefix = dataLine.slice(0, colonIdx);
           const payload = dataLine.slice(colonIdx + 1);
 
-          if (['0', '1', '2', '8', 'g', 'r', 'e', 'd'].includes(prefix)) {
+          if (['0', '1', '2', '3', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'r'].includes(prefix)) {
             try {
               if (prefix === '0') {
                 const text = JSON.parse(payload);
                 if (typeof text === 'string' && text) {
                   thinkParser.feed(text);
                 }
+              } else if (prefix === '3') {
+                let errMsg = payload;
+                try {
+                  const parsed = JSON.parse(payload);
+                  errMsg = typeof parsed === 'string' ? parsed : (parsed?.message || payload);
+                } catch {
+                  if (errMsg.startsWith('"') && errMsg.endsWith('"')) {
+                    errMsg = errMsg.slice(1, -1);
+                  }
+                }
+                onError?.(new Error(errMsg));
+                emitDone();
+                try { reader.cancel(); } catch (e) { }
+                break;
               } else if (prefix === 'g' || prefix === 'r') {
                 const text = JSON.parse(payload);
                 if (typeof text === 'string' && text) {
@@ -541,14 +555,16 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
                 break;
               }
             } catch {
-              // Ignore parse errors
+              // Ignore parse errors on malformed payloads
             }
             continue;
           }
         }
 
-        // 3. Fallback raw text string
-        thinkParser.feed(dataLine);
+        // 3. Fallback raw text string (only if not a wire protocol code)
+        if (!/^[0-9a-z]:/i.test(dataLine)) {
+          thinkParser.feed(dataLine);
+        }
 
       }
     }
