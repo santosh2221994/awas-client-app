@@ -161,8 +161,14 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
   const isCheckingExisting = useMemo(() => {
     if (isUser) return false;
     if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
+    // Fire when the message contains a tool-result block from list_repository_agents
     const lower = (content || '').toLowerCase();
-    return lower.includes('checkexistingagents') || (lower.includes('search') && lower.includes('agent'));
+    return (
+      lower.includes('list_repository_agents') ||
+      lower.includes('agent repository') ||
+      lower.includes('checkexistingagents') ||
+      (lower.includes('found') && lower.includes('agent') && lower.includes('repositor'))
+    );
   }, [isUser, nodeActions, content]);
 
   const matchedExistingAgents = useMemo(() => {
@@ -210,27 +216,43 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
   const handleConfirmAction = async () => {
     if (!nodeActions || isApplied) return;
 
-    // Ensure the active workflow ID is set so applyNodeActions can save
     const { selectedCrewAgentId, setSelectedCrewAgentId } = useUIStore.getState();
     const canvasStore = useCanvasStore.getState();
 
-    if (selectedCrewAgentId?.startsWith('wf-') && !canvasStore.activeWorkflowId) {
-      canvasStore.setActiveWorkflowId(selectedCrewAgentId);
-    }
+    if (selectedCrewAgentId?.startsWith('wf-')) {
+      // Ensure activeWorkflowId is set before applying
+      if (!canvasStore.activeWorkflowId) {
+        canvasStore.setActiveWorkflowId(selectedCrewAgentId);
+      }
 
-    canvasStore.applyNodeActions(nodeActions);
-    setIsApplied(true);
+      // Apply nodes to canvas
+      canvasStore.applyNodeActions(nodeActions);
+      setIsApplied(true);
 
-    // If user is not already on the canvas, navigate there
-    if (!selectedCrewAgentId?.startsWith('wf-')) {
-      // Create a new workflow in MongoDB and navigate into it
+      // Explicitly save 150ms after apply so Zustand state is fully flushed.
+      await new Promise((r) => setTimeout(r, 150));
+      await canvasStore.saveWorkflowCanvas(selectedCrewAgentId);
+    } else {
+      // Not yet on a workflow — create one, apply, then save
       const wfId = `wf-${Date.now()}`;
       const firstName = nodeActions.find(a => a.name)?.name || 'New Workflow';
       canvasStore.setActiveWorkflowId(wfId);
+      canvasStore.applyNodeActions(nodeActions);
+      setIsApplied(true);
+
+      // Wait for state flush then save
+      await new Promise((r) => setTimeout(r, 150));
       await canvasStore.saveWorkflowCanvas(wfId, firstName);
       setSelectedCrewAgentId(wfId);
     }
   };
+
+  // Automatically apply workflow nodes to canvas & save to MongoDB as soon as generation completes
+  React.useEffect(() => {
+    if (!isStreaming && isBuildAction && nodeActions && !isApplied) {
+      handleConfirmAction();
+    }
+  }, [isStreaming, isBuildAction, nodeActions, isApplied]);
 
   const formatContent = (text) => {
     if (!text) return null;
@@ -340,8 +362,8 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
               </div>
             )}
 
-            {/* Interactive Agent Repository Match Card hidden per user preference */}
-            {false && !isUser && isCheckingExisting && (
+            {/* Interactive Agent Repository Match Card */}
+            {!isUser && isCheckingExisting && (
               <div className="mt-3 p-3 bg-indigo-50/90 border border-indigo-200 rounded-2xl space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

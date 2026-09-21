@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import { getConnectedLLMModels } from '../utils/llmConnectionService';
+
+const getInitialModel = () => {
+  const models = getConnectedLLMModels();
+  return models?.[0]?.id || 'gpt-4o';
+};
 
 export const useUIStore = create((set) => ({
   isSidebarCollapsed: false,
@@ -8,6 +14,9 @@ export const useUIStore = create((set) => ({
   selectedAgentId: null,
   selectedCrewAgentId: null,
   rightPanelView: 'tools',
+  selectedModel: getInitialModel(),
+
+  setSelectedModel: (model) => set({ selectedModel: model }),
 
   toggleSidebar: () =>
     set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),

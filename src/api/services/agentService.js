@@ -414,7 +414,9 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
 
   const token = useSessionStore.getState().token;
   const rawBackendURL = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || '/api';
-  const backendURL = rawBackendURL.replace(/\/+$/, '');
+  const backendURL = rawBackendURL.startsWith('http') ? '/api' : rawBackendURL.replace(/\/+$/, '');
+
+  const selectedModel = (await import('../../stores/useUIStore')).useUIStore.getState().selectedModel;
 
   const payload = JSON.stringify({
     messages,
@@ -422,11 +424,13 @@ export async function streamAgentGenerate(agentId, messages, threadId, callbacks
       thread: threadId,
       resource: 'default-user',
     },
+    modelId: selectedModel,
   });
 
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'text/event-stream',
+    'x-model-id': selectedModel || '',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 

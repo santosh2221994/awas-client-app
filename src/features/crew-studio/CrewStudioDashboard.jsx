@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
     Search, Plus, Bot, ChevronRight,
     PanelRightOpen, PanelRightClose, ShoppingBag,
-    Star, X, GitBranch
+    Star, X, GitBranch, Sparkles, Globe, FileText,
+    MessageSquare, Terminal, Zap, ArrowRight, Layers
 } from 'lucide-react';
 import { listAgents } from '../../api/services/agentService';
 import { listWorkflows, saveWorkflow, deleteWorkflow } from '../../api/services/workflowService';
@@ -12,7 +13,7 @@ import Button from '../../components/Button';
 import AgentChatPanel from '../chat-sidebar/AgentChatPanel';
 
 export default function CrewStudioDashboard() {
-    const { setSelectedCrewAgentId, isRightPanelOpen, toggleRightPanel } = useUIStore();
+    const { setSelectedCrewAgentId, isRightPanelOpen, toggleRightPanel, selectedCrewAgentId } = useUIStore();
     const [chatAgent, setChatAgent] = useState(null);
 
     const [agents, setAgents] = useState([]);
@@ -38,8 +39,9 @@ export default function CrewStudioDashboard() {
     const [wfName, setWfName] = useState('');
     const [wfDesc, setWfDesc] = useState('');
 
-    // Load workflows from MongoDB on mount
-    useEffect(() => {
+    // Load workflows from MongoDB — runs on mount and whenever we navigate back to the dashboard
+    const fetchWorkflows = useCallback(() => {
+        setWorkflowsLoading(true);
         setWorkflowsError(null);
         listWorkflows()
             .then((data) => setWorkflows(Array.isArray(data) ? data : []))
@@ -53,6 +55,15 @@ export default function CrewStudioDashboard() {
             })
             .finally(() => setWorkflowsLoading(false));
     }, []);
+
+    // Re-fetch whenever the dashboard becomes visible:
+    // 1. On first mount
+    // 2. When user navigates back from canvas (selectedCrewAgentId becomes null)
+    useEffect(() => {
+        if (selectedCrewAgentId === null) {
+            fetchWorkflows();
+        }
+    }, [selectedCrewAgentId, fetchWorkflows]);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newAgentName, setNewAgentName] = useState('');
@@ -95,26 +106,29 @@ export default function CrewStudioDashboard() {
         e.preventDefault();
         if (!wfName.trim()) return;
         const workflowId = `wf-${Date.now()}`;
-        const newWf = {
-            workflowId,
-            id: workflowId,
-            name: wfName,
-            description: wfDesc || '',
-            nodes: [],
-            edges: [],
-            createdAt: new Date().toISOString(),
-        };
-        // Persist to MongoDB first
         try {
-            await saveWorkflow({ workflowId, name: wfName, description: wfDesc || '', nodes: [], edges: [] });
-            
-            // Optimistically update UI
-            setWorkflows((prev) => [...prev, newWf]);
+            // Save to DB and use the actual returned document
+            const saved = await saveWorkflow({
+                workflowId,
+                name: wfName,
+                description: wfDesc || '',
+                nodes: [],
+                edges: [],
+            });
+            // Use DB response so id/createdAt/updatedAt are accurate
+            const newWf = saved || {
+                workflowId,
+                id: workflowId,
+                name: wfName,
+                description: wfDesc || '',
+                nodes: [],
+                edges: [],
+                createdAt: new Date().toISOString(),
+            };
+            setWorkflows((prev) => [newWf, ...prev]);
             setWfName('');
             setWfDesc('');
             setShowWorkflowModal(false);
-            
-            // Then navigate
             setSelectedCrewAgentId(workflowId);
         } catch (err) {
             console.warn('[CrewStudioDashboard] Failed to save workflow to DB', err);
@@ -183,24 +197,49 @@ export default function CrewStudioDashboard() {
                         <h1 className="text-xl font-bold text-gray-900 mt-1">Agent & Workflow Studio</h1>
                         <p className="text-xs text-gray-500 mt-0.5">Build autonomous agent flows or buy custom-built agents from the marketplace.</p>
                     </div>
+                    {!workflowsLoading && (
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-center px-5 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                                <span className="text-2xl font-extrabold text-indigo-600">{workflows.length}</span>
+                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mt-0.5">{workflows.length === 1 ? 'Workflow' : 'Workflows'}</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Recent Projects */}
-                <div className="space-y-6">
+                <div className="space-y-5">
+                    {/* Section header */}
                     <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                            <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">Recent projects</h2>
-                            <p className="text-xs text-gray-500">Pick up where you left off or deploy new agent capabilities</p>
+                            <div className="flex items-center gap-2.5">
+                                <h2 className="text-lg font-extrabold text-gray-900 tracking-tight">My Workflows</h2>
+                                {!workflowsLoading && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                        {workflows.length} {workflows.length === 1 ? 'workflow' : 'workflows'}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-gray-500">All workflows stored in your account — pick up where you left off</p>
                         </div>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            className="bg-white border-slate-200 text-slate-800 text-xs font-semibold shadow-xs"
-                            onClick={() => { setNewAgentSell(true); setShowCreateModal(true); }}
-                        >
-                            <ShoppingBag className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
-                            Sell on Marketplace
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowWorkflowModal(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                New Workflow
+                            </button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="bg-white border-slate-200 text-slate-800 text-xs font-semibold shadow-xs"
+                                onClick={() => { setNewAgentSell(true); setShowCreateModal(true); }}
+                            >
+                                <ShoppingBag className="w-3.5 h-3.5 mr-1.5 text-indigo-500" />
+                                Sell on Marketplace
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Filter bar */}
@@ -209,13 +248,22 @@ export default function CrewStudioDashboard() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search projects..."
+                                placeholder="Search workflows..."
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 className="w-full text-xs bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium placeholder-gray-400"
                             />
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={fetchWorkflows}
+                                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all outline-none"
+                                title="Refresh workflows"
+                            >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
                             <button
                                 onClick={toggleRightPanel}
                                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all outline-none"
@@ -226,104 +274,166 @@ export default function CrewStudioDashboard() {
                         </div>
                     </div>
 
-                    {/* Cards / Empty State */}
-                    {workflowsError ? (
-                        <div className="flex flex-col items-center justify-center py-10 px-6 border border-red-200 bg-red-50 rounded-2xl text-center gap-3">
-                            <p className="text-xs text-red-600 font-semibold">{workflowsError}</p>
-                            <button
-                                onClick={() => {
-                                    setWorkflowsLoading(true);
-                                    setWorkflowsError(null);
-                                    listWorkflows()
-                                        .then((data) => setWorkflows(Array.isArray(data) ? data : []))
-                                        .catch((err) => {
-                                            if (err?.status === 401) useSessionStore.getState().logout();
-                                            else setWorkflowsError('Failed to load workflows. Please try again.');
-                                            setWorkflows([]);
-                                        })
-                                        .finally(() => setWorkflowsLoading(false));
-                                }}
-                                className="text-xs font-bold text-red-600 underline"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    ) : workflows.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-200 rounded-3xl bg-white text-center gap-5">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                                <GitBranch className="w-7 h-7 text-indigo-500" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <h3 className="text-sm font-bold text-gray-900">No workflows yet</h3>
-                                <p className="text-xs text-gray-500 max-w-xs leading-relaxed">
-                                    Create your first workflow to start building multi-agent pipelines on the canvas. Name it, describe it, and the AI will help you build it step by step.
-                                </p>
-                            </div>
-                            <div className="flex flex-col sm:flex-row items-center gap-3">
-                                <button
-                                    onClick={() => setShowWorkflowModal(true)}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    Create your first workflow
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-6 pt-2 border-t border-gray-100 w-full justify-center">
-                                {[
-                                    { step: '1', label: 'Name your workflow' },
-                                    { step: '2', label: 'Chat with AI to build it' },
-                                    { step: '3', label: 'Apply to canvas' },
-                                ].map(({ step, label }) => (
-                                    <div key={step} className="flex items-center gap-2">
-                                        <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center shrink-0">{step}</span>
-                                        <span className="text-[11px] text-gray-500 font-medium">{label}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                            {/* Create New */}
-                            <div
-                                onClick={() => setShowWorkflowModal(true)}
-                                className="group cursor-pointer border-2 border-dashed border-gray-300 bg-white hover:border-indigo-400 rounded-2xl flex flex-col items-center justify-center min-h-[175px] py-6 px-4 text-center transition-all duration-200 hover:shadow-xs flex-shrink-0 w-[350px]"
-                            >
-                                <div className="h-10 w-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                                    <Plus className="w-5 h-5" />
+                    {/* First-time guided steps — rendered ABOVE the Create Workflow grid */}
+                    {!workflowsLoading && !workflowsError && workflows.length === 0 && (
+                        <div className="bg-gradient-to-r from-indigo-50/80 via-purple-50/50 to-blue-50/80 border border-indigo-100/90 rounded-2xl p-5 shadow-xs mb-4 space-y-3.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100/60 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex h-2.5 w-2.5 rounded-full bg-indigo-600 animate-pulse" />
+                                    <span className="text-xs font-extrabold uppercase tracking-widest text-indigo-800">Workflow Launch Guide</span>
                                 </div>
-                                <h3 className="text-xs font-bold text-gray-800 mt-3 group-hover:text-indigo-600">Create New</h3>
-                                <p className="text-[11px] text-gray-400 mt-1 max-w-[150px]">Start fresh project or workflow canvas</p>
+                                <span className="text-[11px] font-semibold text-gray-500">Follow these 3 easy steps to build your first AI crew</span>
                             </div>
 
-                            {/* Workflow Cards */}
-                            {workflows.filter((wf) => {
-                                const q = query.toLowerCase();
-                                return wf.name?.toLowerCase().includes(q) || wf.description?.toLowerCase().includes(q);
-                            }).map((wf) => (
-                                <div
-                                    key={wf.workflowId || wf.id}
-                                    onClick={() => setSelectedCrewAgentId(wf.workflowId || wf.id)}
-                                    className="group cursor-pointer border rounded-2xl p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:translate-y-[-2px] flex flex-col justify-between min-h-[175px] flex-shrink-0 w-[350px] bg-white border-gray-200 hover:border-indigo-200"
-                                >
-                                    <div>
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                                                <GitBranch className="w-5 h-5" />
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative">
+                                {[
+                                    {
+                                        step: '1',
+                                        title: 'Name your workflow',
+                                        desc: 'Click "Create New Workflow" below and enter a title for your project.',
+                                        icon: Sparkles,
+                                        badgeBg: 'bg-indigo-600 text-white shadow-indigo-200'
+                                    },
+                                    {
+                                        step: '2',
+                                        title: 'Chat with AI to build it',
+                                        desc: 'Use natural language with AI Co-Pilot to configure agents & tools.',
+                                        icon: MessageSquare,
+                                        badgeBg: 'bg-purple-600 text-white shadow-purple-200'
+                                    },
+                                    {
+                                        step: '3',
+                                        title: 'Apply to canvas',
+                                        desc: 'Watch your nodes auto-render on the interactive canvas & run live.',
+                                        icon: GitBranch,
+                                        badgeBg: 'bg-emerald-600 text-white shadow-emerald-200'
+                                    }
+                                ].map((item, idx) => {
+                                    const IconComponent = item.icon;
+                                    return (
+                                        <div key={item.step} className="bg-white/90 backdrop-blur-xs border border-indigo-100/80 rounded-xl p-4 flex flex-col justify-between shadow-2xs hover:shadow-xs transition-all relative group">
+                                            <div>
+                                                <div className="flex items-center justify-between mb-2.5">
+                                                    <div className={`w-7 h-7 rounded-lg ${item.badgeBg} flex items-center justify-center text-xs font-black shadow-xs`}>
+                                                        {item.step}
+                                                    </div>
+                                                    <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600 group-hover:scale-110 transition-transform">
+                                                        <IconComponent className="w-3.5 h-3.5" />
+                                                    </div>
+                                                </div>
+                                                <h4 className="text-xs font-extrabold text-gray-800 tracking-tight">{item.title}</h4>
+                                                <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">{item.desc}</p>
                                             </div>
-                                            <span className="text-[10px] font-bold text-gray-400 border border-gray-200 rounded-full px-2 py-0.5 uppercase bg-gray-50">Workflow</span>
+
+                                            {idx < 2 && (
+                                                <div className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-white border border-indigo-100 text-indigo-500 rounded-full p-1 shadow-2xs">
+                                                    <ChevronRight className="w-3.5 h-3.5" />
+                                                </div>
+                                            )}
                                         </div>
-                                        <h3 className="text-sm font-bold mt-4 line-clamp-1 text-gray-800 group-hover:text-indigo-600 transition-colors">{wf.name}</h3>
-                                        <p className="text-[11px] text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{wf.description || 'No description provided.'}</p>
-                                    </div>
-                                    <div className="flex items-center justify-between border-t border-gray-100 pt-3.5 mt-4">
-                                        <span className="text-[10px] text-gray-400 select-none">{new Date(wf.createdAt).toLocaleDateString()}</span>
-                                        <button className="text-[11px] font-bold text-indigo-600 flex items-center gap-0.5">
-                                            <span>Open</span>
-                                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                                        </button>
-                                    </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Loading skeletons */}
+                    {workflowsLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="border border-gray-200 rounded-2xl p-5 min-h-[175px] bg-white animate-pulse">
+                                    <div className="w-10 h-10 rounded-xl bg-gray-100 mb-4" />
+                                    <div className="h-3 bg-gray-100 rounded w-2/3 mb-2" />
+                                    <div className="h-2.5 bg-gray-100 rounded w-full mb-1.5" />
+                                    <div className="h-2.5 bg-gray-100 rounded w-4/5" />
                                 </div>
                             ))}
+                        </div>
+                    ) : workflowsError ? (
+                        <div className="flex flex-col items-center justify-center py-10 px-6 border border-red-200 bg-red-50 rounded-2xl text-center gap-3">
+                            <p className="text-xs text-red-600 font-semibold">{workflowsError}</p>
+                            <button onClick={fetchWorkflows} className="text-xs font-bold text-red-600 underline">Retry</button>
+                        </div>
+                    ) : workflows.length === 0 ? (
+                        /* Centered Create Workflow Card for Zero Workflows */
+                        <div
+                            onClick={() => setShowWorkflowModal(true)}
+                            className="group cursor-pointer border-2 border-dashed border-indigo-200 bg-white hover:border-indigo-400 rounded-3xl p-10 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-md hover:bg-indigo-50/30 max-w-xl mx-auto my-4 space-y-3"
+                        >
+                            <div className="h-14 w-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shadow-2xs">
+                                <Plus className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-extrabold text-gray-900 group-hover:text-indigo-600 transition-colors">Create New Workflow</h3>
+                                <p className="text-xs text-gray-500 mt-1 max-w-sm">Start a fresh interactive canvas or prompt AI Co-Pilot in the sidebar.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setShowWorkflowModal(true); }}
+                                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 mt-2"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Start Fresh Canvas
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {/* Always-visible Create New card in grid */}
+                            <div
+                                onClick={() => setShowWorkflowModal(true)}
+                                className="group cursor-pointer border-2 border-dashed border-gray-300 bg-white hover:border-indigo-400 rounded-2xl flex flex-col items-center justify-center min-h-[175px] py-6 px-4 text-center transition-all duration-200 hover:shadow-sm hover:bg-indigo-50/30"
+                            >
+                                <div className="h-10 w-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-indigo-100 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors">
+                                    <Plus className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-xs font-bold text-gray-700 mt-3 group-hover:text-indigo-600">Create New Workflow</h3>
+                                <p className="text-[11px] text-gray-400 mt-1">Start a fresh canvas</p>
+                            </div>
+
+                            {/* All workflow cards — filtered by search */}
+                            {workflows
+                                .filter((wf) => {
+                                    const q = query.toLowerCase();
+                                    return !q || wf.name?.toLowerCase().includes(q) || wf.description?.toLowerCase().includes(q);
+                                })
+                                .map((wf) => (
+                                    <div
+                                        key={wf.workflowId || wf.id}
+                                        onClick={() => setSelectedCrewAgentId(wf.workflowId || wf.id)}
+                                        className="group cursor-pointer border rounded-2xl p-5 shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between min-h-[175px] bg-white border-gray-200 hover:border-indigo-300"
+                                    >
+                                        <div>
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                                                    <GitBranch className="w-5 h-5" />
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-400 border border-gray-200 rounded-full px-2 py-0.5 uppercase bg-gray-50">Workflow</span>
+                                            </div>
+                                            <h3 className="text-sm font-bold mt-4 line-clamp-1 text-gray-800 group-hover:text-indigo-600 transition-colors">{wf.name}</h3>
+                                            <p className="text-[11px] text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{wf.description || 'No description provided.'}</p>
+                                        </div>
+                                        <div className="flex items-center justify-between border-t border-gray-100 pt-3.5 mt-4">
+                                            <span className="text-[10px] text-gray-400 select-none">
+                                                {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString() : '—'}
+                                            </span>
+                                            <span className="text-[11px] font-bold text-indigo-600 flex items-center gap-0.5">
+                                                Open
+                                                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+
+                            {/* No results from search */}
+                            {workflows.length > 0 && query && workflows.filter((wf) => {
+                                const q = query.toLowerCase();
+                                return wf.name?.toLowerCase().includes(q) || wf.description?.toLowerCase().includes(q);
+                            }).length === 0 && (
+                                <div className="col-span-full py-8 text-center text-xs text-gray-400">
+                                    No workflows match &ldquo;{query}&rdquo;
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

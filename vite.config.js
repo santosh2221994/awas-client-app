@@ -21,6 +21,20 @@ export default defineConfig({
           });
         },
       },
+      '/ai': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        timeout: 300000,
+        proxyTimeout: 300000,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            const ct = proxyRes.headers['content-type'] ?? '';
+            if (ct.includes('text/event-stream')) {
+              proxyRes.headers['x-accel-buffering'] = 'no';
+            }
+          });
+        },
+      },
     },
   },
 })

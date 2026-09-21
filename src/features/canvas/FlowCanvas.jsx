@@ -225,8 +225,10 @@ export default function FlowCanvas() {
   // Save canvas on node/edge change for wf- workflows, debounced by 1s
   const handleNodesChange = (changes) => {
     onNodesChange(changes);
-    const wfId = useCanvasStore.getState().activeWorkflowId;
-    if (wfId) {
+    const storeState = useCanvasStore.getState();
+    const wfId = storeState.activeWorkflowId;
+    // Only auto-save if canvas contains valid non-empty nodes to prevent overwriting saved workflows with empty state
+    if (wfId && storeState.nodes && storeState.nodes.length > 0) {
       if (canvasSaveTimeout) clearTimeout(canvasSaveTimeout);
       canvasSaveTimeout = setTimeout(() => saveWorkflowCanvas(wfId), 1000);
     }
@@ -234,8 +236,9 @@ export default function FlowCanvas() {
 
   const handleEdgesChange = (changes) => {
     onEdgesChange(changes);
-    const wfId = useCanvasStore.getState().activeWorkflowId;
-    if (wfId) {
+    const storeState = useCanvasStore.getState();
+    const wfId = storeState.activeWorkflowId;
+    if (wfId && storeState.nodes && storeState.nodes.length > 0) {
       if (canvasSaveTimeout) clearTimeout(canvasSaveTimeout);
       canvasSaveTimeout = setTimeout(() => saveWorkflowCanvas(wfId), 1000);
     }

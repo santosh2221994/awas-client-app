@@ -111,7 +111,18 @@ export default function App() {
       );
     }
 
-    if (activeNavItem === 'crew-studio' && !selectedCrewAgentId) {
+    if (activeNavItem === 'crew-studio') {
+      if (selectedCrewAgentId) {
+        return (
+          <>
+            <ChatSidebar />
+            <main className="flex-1 relative overflow-hidden flex h-full">
+              <FlowCanvas />
+              <RightPanel />
+            </main>
+          </>
+        );
+      }
       return (
         <main className="flex-1 relative overflow-hidden flex h-full">
           <CrewStudioDashboard />
