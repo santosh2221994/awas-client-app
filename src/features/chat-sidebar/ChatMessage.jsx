@@ -1,105 +1,113 @@
 import React, { useState, useMemo } from 'react';
+import { Bot, User, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import ReasoningPanel from './ReasoningPanel';
-import { Zap, CheckCircle2, Play, Sparkles, Bot, Plus, Search } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useUIStore } from '../../stores/useUIStore';
-import { saveWorkflow } from '../../api/services/workflowService';
 
-/**
- * Extracts and validates workflow/node JSON schema from assistant messages.
- * Strips raw action tags [CANVAS_ACTION] from the user-facing text.
- */
-/**
- * Extracts and validates workflow/node JSON schema from assistant messages.
- * Handles: [CANVAS_ACTION] tags, markdown code blocks, inline JSON arrays,
- * partial streaming fragments, addTask format, and canvasDefinition payloads.
- */
+function ReasoningPanel({ isThinking, reasoning }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!isThinking && !reasoning) return null;
+
+  return (
+    <div className="mb-2 border border-indigo-100 bg-indigo-50/50 rounded-xl overflow-hidden font-sans">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-3 py-1.5 flex items-center justify-between text-xs font-semibold text-indigo-700 hover:bg-indigo-100/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          {isThinking ? (
+            <>
+              <div className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />
+              <span>Thinking &amp; reasoning...</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Thought process</span>
+            </>
+          )}
+        </div>
+        {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+      </button>
+
+      {isOpen && reasoning && (
+        <div className="px-3 py-2 text-xs text-indigo-900/80 bg-white border-t border-indigo-100 font-mono leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">
+          {reasoning}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function extractAndValidateNodeSchema(content) {
-  if (!content || typeof content !== 'string') return { actions: null, cleanText: content };
+  if (!content) return { actions: null, cleanText: '' };
 
-  // Strip entire [CANVAS_ACTION]...[/CANVAS_ACTION] blocks, or [CANVAS_ACTION] ... to end of string
-  let cleanText = content
-    .replace(/\[(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*?\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]/gi, '')
-    .replace(/\[(?:CANVAS_ACTION|AGENT_ACTION)\][\s\S]*/gi, '')
-    .replace(/\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]/gi, '')
-    .trim();
-  let actions = null;
+  let cleanText = content;
 
-  // Helper: try to parse a string as JSON, return null on failure
   const tryParse = (str) => {
     try { return JSON.parse(str); } catch { return null; }
   };
 
-  // Helper: validate a parsed actions array
-  const isValidActions = (arr) =>
-    Array.isArray(arr) && arr.length > 0 &&
-    arr.every(item => typeof item === 'object' && item !== null && (item.action || item.name || item.type));
-
   try {
-    // ── 1. [CANVAS_ACTION] or [AGENT_ACTION] tag format ─────────────────────
-    const tagMatch = content.match(/\[(?:CANVAS_ACTION|AGENT_ACTION)\]\s*([\s\S]*?)(?:\[\/(?:CANVAS_ACTION|AGENT_ACTION)\]|$)/i);
-    if (tagMatch) {
-      const tagContent = tagMatch[1].trim();
-      const parsed = tryParse(tagContent);
-      if (parsed) {
-        const arr = Array.isArray(parsed) ? parsed : [parsed];
-        if (isValidActions(arr)) {
-          // cleanText is already stripped at top of function
-          return { actions: arr, cleanText: cleanText || 'Action plan generated for canvas.' };
+    // ── 1. [CANVAS_ACTION] prefix format ─────────────────────────────────────
+    if (content.includes('[CANVAS_ACTION]')) {
+      const parts = content.split('[CANVAS_ACTION]');
+      cleanText = parts[0].trim();
+      const rawJson = parts[1]?.trim() || '';
+
+      const jsonMatch = rawJson.match(/\[[\s\S]*\]/) || rawJson.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = tryParse(jsonMatch[0]);
+        if (parsed) {
+          const actionArr = Array.isArray(parsed) ? parsed : [parsed];
+          return { actions: actionArr, cleanText: cleanText || 'Canvas action plan proposed.' };
         }
       }
     }
 
-    // ── 2. Markdown code block ```json [...] ``` ─────────────────────────────
-    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    // ── 2. ```json code block containing actions ──────────────────────────────
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       const parsed = tryParse(codeBlockMatch[1].trim());
       if (parsed) {
-        const arr = Array.isArray(parsed) ? parsed : [parsed];
-        if (isValidActions(arr)) {
-          cleanText = content.replace(codeBlockMatch[0], '').trim();
-          return { actions: arr, cleanText: cleanText || 'Action plan generated for canvas.' };
+        let actions = null;
+        if (Array.isArray(parsed) && parsed.some(a => a.action || a.name || a.type)) {
+          actions = parsed;
+        } else if (parsed.actions && Array.isArray(parsed.actions)) {
+          actions = parsed.actions;
+        } else if (parsed.action || parsed.name || parsed.type) {
+          actions = [parsed];
         }
-        // Also handle canvasDefinition format from generateCanvasWorkflow tool
-        if (parsed.canvasDefinition?.nodes?.length > 0) {
-          actions = parsed.canvasDefinition.nodes.map(n => ({
-            action: 'addAgent',
-            name: n.label || n.id,
-            description: n.config?.description || '',
-            model: n.config?.model || 'gpt-4o-mini',
-          }));
-          if (isValidActions(actions)) {
-            cleanText = content.replace(codeBlockMatch[0], '').trim();
-            return { actions, cleanText: cleanText || 'Workflow generated for canvas.' };
-          }
+        if (actions) {
+          cleanText = content.replace(/```(?:json)?\s*[\s\S]*?```/g, '').trim();
+          return { actions, cleanText: cleanText || 'Canvas action plan proposed.' };
         }
       }
     }
 
-    // ── 3. Complete JSON array: [...] anywhere in the text ───────────────────
-    const fullArrayMatch = content.match(/(\[\s*\{\s*"action"[\s\S]*?\}\s*\])/i);
-    if (fullArrayMatch) {
-      const parsed = tryParse(fullArrayMatch[1]);
-      if (parsed && isValidActions(parsed)) {
-        cleanText = content.replace(fullArrayMatch[0], '').trim();
-        return { actions: parsed, cleanText: cleanText || 'Action plan generated for canvas.' };
+    // ── 3. Bare JSON array: [{"action": ...}] ────────────────────────────────
+    const bareArrayMatch = content.match(/\[\s*\{\s*"action"[\s\S]*\}\s*\]/);
+    if (bareArrayMatch) {
+      const parsed = tryParse(bareArrayMatch[0]);
+      if (parsed && Array.isArray(parsed)) {
+        cleanText = content.replace(bareArrayMatch[0], '').trim();
+        return { actions: parsed, cleanText: cleanText || 'Canvas action plan proposed.' };
       }
     }
 
-    // ── 4. Complete single JSON object with action field ─────────────────────
-    const singleObjMatch = content.match(/(\{\s*"action"[\s\S]*?\})/i);
-    if (singleObjMatch) {
-      const parsed = tryParse(singleObjMatch[1]);
-      if (parsed && isValidActions([parsed])) {
-        cleanText = content.replace(singleObjMatch[0], '').trim();
-        return { actions: [parsed], cleanText: cleanText || 'Action generated for canvas.' };
+    // ── 4. Bare JSON object: {"action": ...} ─────────────────────────────────
+    const bareObjMatch = content.match(/\{\s*"action"\s*:\s*"[^"]+"[\s\S]*?\}/);
+    if (bareObjMatch) {
+      const parsed = tryParse(bareObjMatch[0]);
+      if (parsed && parsed.action) {
+        cleanText = content.replace(bareObjMatch[0], '').trim();
+        return { actions: [parsed], cleanText: cleanText || 'Canvas action plan proposed.' };
       }
     }
 
     // ── 5. Partial / streaming fragment recovery ─────────────────────────────
-    // The AI may stream fragments like:  }, {"action": "addTask", ...}]
-    // Try to recover by finding all complete {...} objects inside the text
     const objectMatches = [...content.matchAll(/\{\s*"action"\s*:\s*"[^"]+"[^}]*\}/g)];
     if (objectMatches.length > 0) {
       const recovered = [];
@@ -108,7 +116,6 @@ function extractAndValidateNodeSchema(content) {
         if (parsed && (parsed.action || parsed.name || parsed.type)) recovered.push(parsed);
       }
       if (recovered.length > 0) {
-        // Strip the matched JSON fragments from the display text
         cleanText = content;
         for (const m of objectMatches) cleanText = cleanText.replace(m[0], '');
         cleanText = cleanText.replace(/[,\[\]{}]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -117,7 +124,6 @@ function extractAndValidateNodeSchema(content) {
     }
 
     // ── 6. addTask format: {"action":"addTask","id":...,"agentId":...,"description":...}
-    // These don't have a top-level "name" but are still valid canvas actions
     const taskObjectMatches = [...content.matchAll(/\{\s*"action"\s*:\s*"addTask"[\s\S]*?\}/g)];
     if (taskObjectMatches.length > 0) {
       const recovered = [];
@@ -161,7 +167,6 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
   const isCheckingExisting = useMemo(() => {
     if (isUser) return false;
     if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
-    // Fire when the message contains a tool-result block from list_repository_agents
     const lower = (content || '').toLowerCase();
     return (
       lower.includes('list_repository_agents') ||
@@ -247,21 +252,12 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
     }
   };
 
-  // Automatically apply workflow nodes to canvas & save to MongoDB as soon as generation completes
-  React.useEffect(() => {
-    if (!isStreaming && isBuildAction && nodeActions && !isApplied) {
-      handleConfirmAction();
-    }
-  }, [isStreaming, isBuildAction, nodeActions, isApplied]);
-
   const formatContent = (text) => {
     if (!text) return null;
-    // Split on newlines first, then apply inline markdown to each line
     const lines = text.split('\n');
     const result = [];
     lines.forEach((line, lineIdx) => {
       if (lineIdx > 0) result.push(<br key={`br-${lineIdx}`} />);
-      // Apply inline markdown: **bold** and `code`
       const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
       parts.forEach((part, partIdx) => {
         const key = `${lineIdx}-${partIdx}`;
@@ -324,14 +320,17 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
               <div className="mt-3 pt-3 border-t border-zinc-200/80 space-y-3">
                 <div>
                   <p className="text-xs font-bold text-gray-900 mb-1">
-                    Here's your <strong className="text-indigo-600">{nodeActions[0]?.name || 'Agent'}</strong> automation, fully built! 🎉
+                    Here's your <strong className="text-indigo-600">{nodeActions[0]?.name || 'Agent'}</strong> automation proposal! 🚀
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    Click <strong>Apply to Canvas</strong> below to display these agents on your workflow canvas.
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>What was created</span>
+                    <span>Proposed Workflow Components</span>
                   </div>
 
                   <div className="overflow-hidden border border-zinc-200 rounded-xl bg-white text-xs shadow-2xs">
@@ -357,8 +356,6 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
                     </table>
                   </div>
                 </div>
-
-
               </div>
             )}
 
@@ -419,14 +416,14 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
           </div>
         )}
 
-        {/* Interactive Confirm & Apply to Canvas Button */}
+        {/* Interactive Manual Confirm & Apply to Canvas Button */}
         {!isUser && isBuildAction && !isStreaming && (
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={handleConfirmAction}
               disabled={isApplied}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs select-none',
+                'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm select-none',
                 isApplied
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:shadow-md cursor-pointer active:scale-95'
@@ -434,51 +431,17 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
             >
               {isApplied ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Applied to Canvas</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>Confirm & Apply to Canvas</span>
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>Apply to Canvas</span>
                 </>
               )}
             </button>
           </div>
-        )}
-
-        {/* Token usage pill — shown below completed assistant messages */}
-        {!isUser && totalTokens !== null && !isStreaming && (
-          <div className="flex items-center gap-1.5 mt-1 px-1 select-none">
-            <Zap className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] text-amber-600 font-mono">
-              {totalTokens.toLocaleString()} tokens
-            </span>
-            {usage?.duration && (
-              <span className="text-[10px] text-gray-500 font-mono ml-0.5">
-                {usage.duration}
-              </span>
-            )}
-            {usage && (
-              <span className="text-[10px] font-mono ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex items-center gap-1 select-none">
-                <span className="text-indigo-500">Input: {(usage.promptTokens ?? 0).toLocaleString()}</span>
-                <span className="text-gray-400">/</span>
-                <span className="text-emerald-500">Output: {(usage.completionTokens ?? 0).toLocaleString()}</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {isUser && formattedTime && (
-          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-right">
-            {formattedTime}
-          </span>
-        )}
-
-        {!isUser && totalTokens === null && formattedTime && (
-          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-left">
-            {formattedTime}
-          </span>
         )}
       </div>
     </div>

@@ -187,25 +187,7 @@ export default function CrewStudioDashboard() {
         <div className="flex-1 bg-slate-50/50 overflow-y-auto relative">
             <div className="max-w-6xl mx-auto px-8 py-8 space-y-10 pb-16">
 
-                {/* Banner */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-white border border-gray-200 rounded-3xl p-6 shadow-xs">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Crew Studio Workspace</span>
-                        </div>
-                        <h1 className="text-xl font-bold text-gray-900 mt-1">Agent & Workflow Studio</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">Build autonomous agent flows or buy custom-built agents from the marketplace.</p>
-                    </div>
-                    {!workflowsLoading && (
-                        <div className="flex items-center gap-4">
-                            <div className="flex flex-col items-center px-5 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
-                                <span className="text-2xl font-extrabold text-indigo-600">{workflows.length}</span>
-                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mt-0.5">{workflows.length === 1 ? 'Workflow' : 'Workflows'}</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+
 
                 {/* Recent Projects */}
                 <div className="space-y-5">

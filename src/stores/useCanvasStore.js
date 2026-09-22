@@ -46,7 +46,7 @@ export const useCanvasStore = create((set, get) => ({
 
   setActiveWorkflowId: (id) => set({ activeWorkflowId: id }),
 
-  saveWorkflowCanvas: async (workflowId, initialName = null) => {
+  saveWorkflowCanvas: async (workflowId, initialName = null, initialDesc = null) => {
     const { nodes, edges } = get();
     // Always mirror to localStorage as well so local cache is kept up-to-date
     try {
@@ -55,14 +55,24 @@ export const useCanvasStore = create((set, get) => ({
 
     try {
       let name = initialName || `Workflow ${workflowId}`;
-      if (!initialName) {
-        try {
-          const existing = await getWorkflow(workflowId);
-          name = existing?.name || name;
-        } catch { /* new workflow */ }
+      let description = initialDesc;
+
+      try {
+        const existing = await getWorkflow(workflowId);
+        if (existing) {
+          name = initialName || existing.name || name;
+          if (description === null || description === undefined) {
+            description = existing.description !== undefined ? existing.description : '';
+          }
+        }
+      } catch { /* new workflow */ }
+
+      const payload = { workflowId, name, nodes, edges };
+      if (description !== null && description !== undefined) {
+        payload.description = description;
       }
 
-      await saveWorkflow({ workflowId, name, nodes, edges });
+      await saveWorkflow(payload);
     } catch (err) {
       console.warn('[useCanvasStore] DB save failed, falling back to localStorage', err);
     }
@@ -91,7 +101,7 @@ export const useCanvasStore = create((set, get) => ({
                 parsedNodes = localNodes;
                 parsedEdges = localEdges || [];
                 // Background backfill to MongoDB
-                saveWorkflow({ workflowId, name: wf.name || `Workflow ${workflowId}`, nodes: parsedNodes, edges: parsedEdges }).catch(() => {});
+                saveWorkflow({ workflowId, name: wf.name || `Workflow ${workflowId}`, description: wf.description || '', nodes: parsedNodes, edges: parsedEdges }).catch(() => {});
               }
             }
           } catch { }
