@@ -88,22 +88,22 @@ export default function ToolCategoryAccordion({ category, isExpanded, onToggle }
           <div
             key={tool.id}
             onClick={() => handleAddTool(tool)}
-            className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-100 cursor-pointer transition-all group/tool select-none"
+            className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 border border-transparent hover:border-gray-100 dark:hover:border-slate-750 cursor-pointer transition-all group/tool select-none"
             title="Click to add this tool to the first agent node"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               {getToolIcon(tool.icon)}
               <div className="min-w-0">
-                <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 block truncate">
+                <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 group-hover:text-gray-900 dark:group-hover:text-white block truncate">
                   {tool.name}
                 </span>
-                <span className="text-[10px] text-gray-400 block truncate max-w-[170px]">
+                <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate max-w-[170px]">
                   {tool.description}
                 </span>
               </div>
             </div>
             
-            <button className="opacity-0 group-hover/tool:opacity-100 p-1 rounded bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all outline-none">
+            <button className="opacity-0 group-hover/tool:opacity-100 p-1 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-all outline-none">
               <Plus className="w-3 h-3" />
             </button>
           </div>

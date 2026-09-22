@@ -14,9 +14,9 @@ const MOCK_TRACES = [
 ];
 
 const STATUS_META = {
-  Success: { cls: 'bg-emerald-50 text-emerald-600 border border-emerald-100', icon: <CheckCircle2 className="w-3 h-3" /> },
-  Failed: { cls: 'bg-red-50 text-red-500 border border-red-100', icon: <XCircle className="w-3 h-3" /> },
-  Running: { cls: 'bg-blue-50 text-blue-600 border border-blue-100', icon: <Activity className="w-3 h-3" /> },
+  Success: { cls: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40', icon: <CheckCircle2 className="w-3 h-3" /> },
+  Failed: { cls: 'bg-red-50 dark:bg-red-950/60 text-red-500 dark:text-red-400 border border-red-100 dark:border-red-800/40', icon: <XCircle className="w-3 h-3" /> },
+  Running: { cls: 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/40', icon: <Activity className="w-3 h-3" /> },
 };
 
 const MOCK_STEPS = [
@@ -34,45 +34,45 @@ function TraceRow({ trace }) {
   return (
     <>
       <tr
-        className="hover:bg-slate-50/30 transition-colors cursor-pointer"
+        className="hover:bg-slate-50/30 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
         <td className="px-6 py-4">
           <div className="flex items-center gap-2">
-            {expanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
-            <span className="font-mono text-[11px] text-gray-400">{trace.id}</span>
+            {expanded ? <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />}
+            <span className="font-mono text-[11px] text-gray-400 dark:text-slate-500">{trace.id}</span>
           </div>
         </td>
-        <td className="px-6 py-4 font-semibold text-gray-900">{trace.name}</td>
-        <td className="px-6 py-4 text-gray-500">{trace.agent}</td>
+        <td className="px-6 py-4 font-semibold text-gray-900 dark:text-slate-100">{trace.name}</td>
+        <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{trace.agent}</td>
         <td className="px-6 py-4">
           <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.cls}`}>
             {meta.icon}
             {trace.status}
           </span>
         </td>
-        <td className="px-6 py-4 font-mono text-gray-700">{trace.duration}</td>
-        <td className="px-6 py-4 text-gray-500">{trace.tokens.toLocaleString()}</td>
-        <td className="px-6 py-4 text-gray-500">{trace.cost}</td>
+        <td className="px-6 py-4 font-mono text-gray-700 dark:text-slate-300">{trace.duration}</td>
+        <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{trace.tokens.toLocaleString()}</td>
+        <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{trace.cost}</td>
         <td className="px-6 py-4">
-          <span className="flex items-center gap-1 text-gray-400 text-[11px]">
+          <span className="flex items-center gap-1 text-gray-400 dark:text-slate-500 text-[11px]">
             <Clock className="w-3 h-3" />
             {trace.timestamp}
           </span>
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-slate-50/60">
+        <tr className="bg-slate-50/60 dark:bg-slate-850/50">
           <td colSpan="8" className="px-8 pb-4 pt-2">
-            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-              <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
+            <div className="border border-gray-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-slate-900">
+              <div className="px-4 py-2.5 border-b border-gray-100 dark:border-slate-800 flex items-center gap-2">
                 <Activity className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-xs font-bold text-gray-700">Execution Steps & Logs</span>
-                <span className="ml-auto text-[11px] text-gray-400">{trace.steps} steps total</span>
+                <span className="text-xs font-bold text-gray-700 dark:text-slate-200">Execution Steps & Logs</span>
+                <span className="ml-auto text-[11px] text-gray-400 dark:text-slate-500">{trace.steps} steps total</span>
               </div>
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  <tr className="text-[10px] font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider border-b border-gray-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
                     <th className="px-4 py-2 text-left">#</th>
                     <th className="px-4 py-2 text-left">Step Name</th>
                     <th className="px-4 py-2 text-left">Type</th>
@@ -80,20 +80,20 @@ function TraceRow({ trace }) {
                     <th className="px-4 py-2 text-left">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
                   {trace.customLogs && trace.customLogs.length > 0 ? (
                     trace.customLogs.map((l, i) => (
-                      <tr key={i} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-2 text-gray-400 font-mono">{i + 1}</td>
-                        <td className="px-4 py-2 text-gray-800 font-medium">{l.text}</td>
+                      <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
+                        <td className="px-4 py-2 text-gray-400 dark:text-slate-500 font-mono">{i + 1}</td>
+                        <td className="px-4 py-2 text-gray-800 dark:text-slate-200 font-medium">{l.text}</td>
                         <td className="px-4 py-2">
-                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 text-indigo-600 border border-indigo-200/40">
+                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-800/40">
                             Workflow Telemetry
                           </span>
                         </td>
-                        <td className="px-4 py-2 font-mono text-gray-600">[{l.time}]</td>
+                        <td className="px-4 py-2 font-mono text-gray-600 dark:text-slate-400">[{l.time}]</td>
                         <td className="px-4 py-2">
-                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> Success
                           </span>
                         </td>
@@ -101,17 +101,17 @@ function TraceRow({ trace }) {
                     ))
                   ) : (
                     MOCK_STEPS.slice(0, trace.steps > 5 ? 5 : trace.steps).map((s) => (
-                      <tr key={s.step} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-2 text-gray-400 font-mono">{s.step}</td>
-                        <td className="px-4 py-2 text-gray-800 font-medium">{s.name}</td>
+                      <tr key={s.step} className="hover:bg-gray-50/50 dark:hover:bg-slate-800/50">
+                        <td className="px-4 py-2 text-gray-400 dark:text-slate-500 font-mono">{s.step}</td>
+                        <td className="px-4 py-2 text-gray-800 dark:text-slate-200 font-medium">{s.name}</td>
                         <td className="px-4 py-2">
-                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 text-indigo-600 border border-indigo-200/40">
+                          <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100/60 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-800/40">
                             {s.type}
                           </span>
                         </td>
-                        <td className="px-4 py-2 font-mono text-gray-600">{s.duration}</td>
+                        <td className="px-4 py-2 font-mono text-gray-600 dark:text-slate-400">{s.duration}</td>
                         <td className="px-4 py-2">
-                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" /> {s.status}
                           </span>
                         </td>
@@ -161,12 +161,12 @@ export default function TracesPage() {
   const failedCount = allTraces.filter(t => t.status === 'Failed').length;
 
   return (
-    <div className="flex-1 bg-slate-50/50 overflow-y-auto select-none selection:bg-indigo-100">
+    <div className="flex-1 bg-slate-50/50 dark:bg-slate-950 overflow-y-auto select-none selection:bg-indigo-100">
       {/* Page Header */}
-      <div className="bg-white border-b border-gray-200/80 px-8 py-6">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-8 py-6">
         <div className="max-w-6xl mx-auto space-y-1">
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Traces & Workflow Execution History</h1>
-          <p className="text-xs text-gray-500">Inspect execution logs, token usage, and step-by-step agent traces</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Traces & Workflow Execution History</h1>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Inspect execution logs, token usage, and step-by-step agent traces</p>
         </div>
       </div>
 
@@ -174,14 +174,14 @@ export default function TracesPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Traces', value: allTraces.length, color: 'text-gray-900' },
-            { label: 'Successful', value: successCount, color: 'text-emerald-600' },
-            { label: 'Failed', value: failedCount, color: 'text-red-500' },
-            { label: 'Total Tokens', value: allTraces.reduce((s, t) => s + (t.tokens || 0), 0).toLocaleString(), color: 'text-indigo-600' },
+            { label: 'Total Traces', value: allTraces.length, color: 'text-gray-900 dark:text-slate-100' },
+            { label: 'Successful', value: successCount, color: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Failed', value: failedCount, color: 'text-red-500 dark:text-red-400' },
+            { label: 'Total Tokens', value: allTraces.reduce((s, t) => s + (t.tokens || 0), 0).toLocaleString(), color: 'text-indigo-600 dark:text-indigo-400' },
           ].map((s) => (
-            <div key={s.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs">
+            <div key={s.label} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
               <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-[11px] text-gray-500 mt-1">{s.label}</div>
+              <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">{s.label}</div>
             </div>
           ))}
         </div>
@@ -189,36 +189,36 @@ export default function TracesPage() {
         {/* Filters */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search by name, ID, or agent..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs bg-white border border-gray-250 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium placeholder-gray-400"
+              className="w-full text-xs bg-white dark:bg-slate-900 border border-gray-250 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-medium text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-250 bg-white rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-650 outline-none hover:bg-gray-50 cursor-pointer"
+            className="border border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-650 dark:text-slate-300 outline-none hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer"
           >
             <option value="All">Status: All</option>
             <option value="Success">Success</option>
             <option value="Failed">Failed</option>
             <option value="Running">Running</option>
           </select>
-          <button className="flex items-center gap-1.5 border border-gray-250 bg-white rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-650 outline-none hover:bg-gray-50 cursor-pointer">
+          <button className="flex items-center gap-1.5 border border-gray-250 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-gray-650 dark:text-slate-300 outline-none hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer">
             <Filter className="w-3 h-3" />
             More Filters
           </button>
         </div>
 
         {/* Traces Table */}
-        <div className="overflow-hidden border border-gray-200 bg-white rounded-2xl shadow-xs">
+        <div className="overflow-hidden border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-gray-150 bg-slate-50/50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+              <tr className="border-b border-gray-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-[10px] uppercase font-bold text-gray-400 dark:text-slate-400 tracking-wider">
                 <th className="px-6 py-3.5">Trace ID</th>
                 <th className="px-6 py-3.5">Automation</th>
                 <th className="px-6 py-3.5">Agent</th>
@@ -229,13 +229,13 @@ export default function TracesPage() {
                 <th className="px-6 py-3.5">Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-xs text-gray-700 dark:text-slate-300">
               {filtered.map((trace) => (
                 <TraceRow key={trace.id} trace={trace} />
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="text-center py-12 text-gray-400 italic">
+                  <td colSpan="8" className="text-center py-12 text-gray-400 dark:text-slate-500 italic">
                     No traces match the current filters.
                   </td>
                 </tr>

@@ -3,11 +3,11 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '../utils/cn.js';
 
 const variants = {
-  primary: 'bg-gray-900 text-white hover:bg-gray-800',
-  secondary: 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50',
-  ghost: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
-  danger: 'bg-red-500 text-white hover:bg-red-600',
-  brand: 'bg-indigo-600 text-white hover:bg-indigo-700',
+  primary: 'bg-gray-900 dark:bg-indigo-600 text-white hover:bg-gray-800 dark:hover:bg-indigo-500',
+  secondary: 'bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800',
+  ghost: 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800',
+  danger: 'bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700',
+  brand: 'bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500',
 };
 
 const sizes = {

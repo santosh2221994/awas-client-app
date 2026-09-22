@@ -20,6 +20,11 @@
     overflow: hidden;
   }
 
+  html.dark body {
+    background-color: #0b0f19;
+    color: #f8fafc;
+  }
+
   #root {
     height: 100vh;
     width: 100vw;
@@ -61,6 +66,19 @@
     display: none;
   }
 
+  /* Dark mode scrollbars */
+  html.dark .scrollbar-thin {
+    scrollbar-color: #334155 transparent;
+  }
+
+  html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #334155;
+  }
+
+  html.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #475569;
+  }
+
   /* React Flow custom styles */
   .react-flow__node {
     cursor: grab;
@@ -98,6 +116,19 @@
     background-color: #fafafa;
   }
 
+  html.dark .react-flow__background {
+    background-color: #0b0f19;
+  }
+
+  html.dark .react-flow__handle {
+    border-color: #475569 !important;
+    background: #1e293b !important;
+  }
+
+  html.dark .react-flow__edge-path {
+    stroke: #475569;
+  }
+
   /* Node card base */
   .node-card {
     @apply bg-white rounded-xl shadow-node border border-gray-200 transition-shadow duration-200;
@@ -107,9 +138,17 @@
     @apply shadow-node-hover;
   }
 
+  html.dark .node-card {
+    @apply bg-slate-900 border-slate-800 text-slate-100;
+  }
+
   /* Code-style text blocks */
   .code-block {
     @apply font-mono text-xs bg-gray-100 text-gray-700 rounded-lg px-3 py-2;
+  }
+
+  html.dark .code-block {
+    @apply bg-slate-800 text-slate-200;
   }
 }
 

@@ -21,7 +21,7 @@ function AgentCard({ agent, viewMode }) {
     return (
       <div
         onClick={handleSelectAgent}
-        className="group relative flex flex-col justify-between p-5 bg-white border border-gray-200/80 hover:border-indigo-300 rounded-3xl shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden"
+        className="group relative flex flex-col justify-between p-5 bg-white dark:bg-slate-900 border border-gray-200/80 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 rounded-3xl shadow-xs hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden"
       >
         <div>
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -38,45 +38,45 @@ function AgentCard({ agent, viewMode }) {
                 <span className={cn(
                   "inline-block text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1",
                   isCoPilot
-                    ? "bg-indigo-50 text-indigo-700 border border-indigo-200/60"
-                    : "bg-slate-100 text-slate-700"
+                    ? "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-900"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                 )}>
                   {agent.type || 'Assistant'}
                 </span>
-                <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {agent.name || 'Untitled Agent'}
                 </h3>
               </div>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-4">
+          <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-4">
             {agent.description || 'No description provided for this agent.'}
           </p>
         </div>
 
-        <div className="pt-3 border-t border-gray-100 space-y-3">
+        <div className="pt-3 border-t border-gray-100 dark:border-slate-800 space-y-3">
           <div className="flex items-center flex-wrap gap-1.5 text-[11px]">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 text-gray-600 border border-gray-200/60 font-mono">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200/60 dark:border-slate-750 font-mono">
               <Cpu className="w-3 h-3 text-indigo-500" />
               {agent.model || 'gpt-4o'}
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 text-gray-600 border border-gray-200/60">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200/60 dark:border-slate-750">
               <Wrench className="w-3 h-3 text-amber-500" />
               {agent.tools?.length ?? 0} tool{agent.tools?.length === 1 ? '' : 's'}
             </span>
             {agent.price && agent.price !== 'Free' && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-bold border border-emerald-200/60 ml-auto">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200/60 dark:border-emerald-800 ml-auto">
                 {agent.price}
               </span>
             )}
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-gray-400 font-medium truncate">By {agent.username || 'Creator'}</span>
+            <span className="text-[11px] text-gray-400 dark:text-slate-500 font-medium truncate">By {agent.username || 'Creator'}</span>
             <button
               onClick={(e) => { e.stopPropagation(); handleSelectAgent(); }}
-              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:text-indigo-700 shrink-0"
+              className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300 shrink-0"
             >
               <span>View Agent</span>
               <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -90,7 +90,7 @@ function AgentCard({ agent, viewMode }) {
   return (
     <div
       onClick={handleSelectAgent}
-      className="group cursor-pointer flex flex-col gap-3 p-4 border border-gray-200/80 rounded-2xl bg-white shadow-2xs transition-all hover:border-indigo-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+      className="group cursor-pointer flex flex-col gap-3 p-4 border border-gray-200/80 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 shadow-2xs transition-all hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex items-center gap-3.5 min-w-0">
         <div className={cn(
@@ -101,14 +101,14 @@ function AgentCard({ agent, viewMode }) {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
               {agent.name || 'Untitled Agent'}
             </h3>
-            <span className="rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-extrabold px-2 py-0.5 border border-indigo-100">
+            <span className="rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold px-2 py-0.5 border border-indigo-100 dark:border-indigo-900">
               {agent.type || 'Assistant'}
             </span>
           </div>
-          <p className="text-xs text-gray-500 truncate mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">
             {agent.description || 'No description available.'}
           </p>
         </div>
@@ -116,16 +116,16 @@ function AgentCard({ agent, viewMode }) {
 
       <div className="flex items-center gap-3 shrink-0">
         <div className="hidden sm:flex items-center gap-2">
-          <span className="rounded-lg bg-gray-50 border border-gray-200/80 px-2.5 py-1 text-xs text-gray-600 font-mono">
+          <span className="rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200/80 dark:border-slate-750 px-2.5 py-1 text-xs text-gray-600 dark:text-slate-300 font-mono">
             {agent.model || 'gpt-4o'}
           </span>
-          <span className="rounded-lg bg-gray-50 border border-gray-200/80 px-2.5 py-1 text-xs text-gray-600">
+          <span className="rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200/80 dark:border-slate-750 px-2.5 py-1 text-xs text-gray-600 dark:text-slate-300">
             {agent.tools?.length ?? 0} tools
           </span>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); handleSelectAgent(); }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-600 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
         >
           <span>Open Agent</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
@@ -206,39 +206,39 @@ export default function AgentsRepository() {
   });
 
   return (
-    <div className="flex-1 min-h-0 overflow-hidden bg-slate-50/60 relative">
+    <div className="flex-1 min-h-0 overflow-hidden bg-slate-50/60 dark:bg-slate-950 relative transition-colors duration-200">
       <div className="h-full overflow-y-auto p-6 scrollbar-thin">
         <div className="max-w-6xl mx-auto space-y-6">
 
           {/* Premium Header Banner */}
-          <div className="relative overflow-hidden rounded-3xl border border-gray-200/90 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-sm transition-colors">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600">AWAS Agent Repository</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">AWAS Agent Repository</span>
                 </div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight sm:text-3xl">
+                <h1 className="text-2xl font-black text-gray-900 dark:text-slate-100 tracking-tight sm:text-3xl">
                   AI Agent Directory & Hub
                 </h1>
-                <p className="mt-1.5 text-xs text-gray-500 max-w-xl leading-relaxed">
-                  Browse, configure, and chat with autonomous agents or use the <strong className="text-indigo-600">Agent Builder Co-Pilot</strong> in the chat sidebar to generate custom agents.
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-slate-400 max-w-xl leading-relaxed">
+                  Browse, configure, and chat with autonomous agents or use the <strong className="text-indigo-600 dark:text-indigo-400">Agent Builder Co-Pilot</strong> in the chat sidebar to generate custom agents.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-indigo-50/80 border border-indigo-100 rounded-2xl px-4 py-2 text-xs font-semibold text-indigo-900">
-                  <Bot className="w-4 h-4 text-indigo-600" />
+                <div className="flex items-center gap-2 bg-indigo-50/80 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 rounded-2xl px-4 py-2 text-xs font-semibold text-indigo-900 dark:text-indigo-300">
+                  <Bot className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   <span>{agents.length} Active Agents</span>
                 </div>
               </div>
             </div>
 
             {/* Filter Controls Bar */}
-            <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               {/* Category tabs */}
-              <div className="flex items-center gap-1.5 bg-gray-100/80 p-1 rounded-2xl border border-gray-200/50">
+              <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-slate-800 p-1 rounded-2xl border border-gray-200/50 dark:border-slate-700">
                 {categories.map((cat) => (
                   <button
                     key={cat}
@@ -246,8 +246,8 @@ export default function AgentsRepository() {
                     className={cn(
                       "px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer select-none",
                       category === cat
-                        ? "bg-white text-gray-900 shadow-xs"
-                        : "text-gray-500 hover:text-gray-800"
+                        ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-xs"
+                        : "text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
                     )}
                   >
                     {cat}
@@ -258,21 +258,21 @@ export default function AgentsRepository() {
               {/* Search & Layout toggle */}
               <div className="flex items-center gap-3">
                 <div className="relative flex-1 sm:w-64">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className="w-full rounded-2xl border border-gray-200/80 bg-gray-50 py-2 pl-9 pr-3 text-xs text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white"
+                    className="w-full rounded-2xl border border-gray-200/80 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 py-2 pl-9 pr-3 text-xs text-gray-900 dark:text-slate-100 outline-none transition focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900"
                     placeholder="Search agents, models, tools..."
                   />
                 </div>
 
-                <div className="flex items-center bg-gray-100/80 p-1 rounded-xl border border-gray-200/50">
+                <div className="flex items-center bg-gray-100/80 dark:bg-slate-800 p-1 rounded-xl border border-gray-200/50 dark:border-slate-700">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={cn(
                       "p-1.5 rounded-lg transition-all cursor-pointer",
-                      viewMode === 'grid' ? "bg-white text-indigo-600 shadow-2xs" : "text-gray-400 hover:text-gray-600"
+                      viewMode === 'grid' ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs" : "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
                     )}
                     title="Grid View"
                   >
@@ -282,7 +282,7 @@ export default function AgentsRepository() {
                     onClick={() => setViewMode('list')}
                     className={cn(
                       "p-1.5 rounded-lg transition-all cursor-pointer",
-                      viewMode === 'list' ? "bg-white text-indigo-600 shadow-2xs" : "text-gray-400 hover:text-gray-600"
+                      viewMode === 'list' ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs" : "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
                     )}
                     title="List View"
                   >
@@ -298,12 +298,12 @@ export default function AgentsRepository() {
             {loading && agents.length === 0 && (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="h-44 rounded-3xl border border-gray-200 bg-white p-5 animate-pulse space-y-3">
+                  <div key={n} className="h-44 rounded-3xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 animate-pulse space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-gray-200" />
+                      <div className="w-10 h-10 rounded-2xl bg-gray-200 dark:bg-slate-800" />
                       <div className="space-y-1.5 flex-1">
-                        <div className="h-3 bg-gray-200 rounded w-1/2" />
-                        <div className="h-2 bg-gray-100 rounded w-3/4" />
+                        <div className="h-3 bg-gray-200 dark:bg-slate-800 rounded w-1/2" />
+                        <div className="h-2 bg-gray-100 dark:bg-slate-850 rounded w-3/4" />
                       </div>
                     </div>
                   </div>
@@ -312,18 +312,18 @@ export default function AgentsRepository() {
             )}
 
             {error && agents.length === 0 && (
-              <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+              <div className="rounded-3xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-6 text-sm text-red-700 dark:text-red-300">
                 {error}
               </div>
             )}
 
             {!loading && filteredAgents.length === 0 && agents.length > 0 && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-12 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto text-indigo-600">
+              <div className="rounded-3xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-12 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400">
                   <Bot className="w-6 h-6" />
                 </div>
-                <h3 className="text-base font-bold text-gray-900">No agents found</h3>
-                <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">No agents found</h3>
+                <p className="text-xs text-gray-500 dark:text-slate-400 max-w-sm mx-auto">
                   Try adjusting your search query or use the Agent Builder Co-Pilot in the left sidebar to create a new agent.
                 </p>
               </div>

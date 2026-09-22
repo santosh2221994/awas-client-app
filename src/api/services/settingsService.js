@@ -69,12 +69,20 @@ export const settingsService = {
   },
 
   /**
+   * Update dual-mode execution preferences (Cloud vs Local, model, temperature, max tokens)
+   */
+  async updateExecution(data) {
+    return client.patch(ENDPOINTS.SETTINGS_EXECUTION, data);
+  },
+
+  /**
    * Create a new personal access token
    */
-  async createApiToken(name, expiresInDays) {
+  async createApiToken(name, expiresInDays, scopes = ['all']) {
     return client.post(ENDPOINTS.SETTINGS_SECURITY_TOKENS, {
       name,
       expiresInDays: expiresInDays ? Number(expiresInDays) : undefined,
+      scopes,
     });
   },
 
@@ -83,6 +91,20 @@ export const settingsService = {
    */
   async revokeApiToken(tokenId) {
     return client.delete(ENDPOINTS.SETTINGS_SECURITY_TOKEN_DELETE(tokenId));
+  },
+
+  /**
+   * Export all workspace data as a JSON bundle
+   */
+  async exportWorkspaceData() {
+    return client.post(ENDPOINTS.SETTINGS_EXPORT);
+  },
+
+  /**
+   * Reset settings to factory defaults
+   */
+  async resetSettings() {
+    return client.post(ENDPOINTS.SETTINGS_RESET);
   },
 };
 

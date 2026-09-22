@@ -46,6 +46,7 @@ export const ENDPOINTS = {
   SETTINGS: '/settings',
   SETTINGS_PROFILE: '/settings/profile',
   SETTINGS_ORGANIZATION: '/settings/organization',
+  SETTINGS_EXECUTION: '/settings/execution',
   SETTINGS_NOTIFICATIONS: '/settings/notifications',
   SETTINGS_APPEARANCE: '/settings/appearance',
   SETTINGS_REGION: '/settings/region',
@@ -53,5 +54,7 @@ export const ENDPOINTS = {
   SETTINGS_SECURITY_2FA_TOGGLE: '/settings/security/2fa/toggle',
   SETTINGS_SECURITY_TOKENS: '/settings/security/tokens',
   SETTINGS_SECURITY_TOKEN_DELETE: (tokenId) => `/settings/security/tokens/${tokenId}`,
+  SETTINGS_EXPORT: '/settings/export',
+  SETTINGS_RESET: '/settings/reset',
 };
 

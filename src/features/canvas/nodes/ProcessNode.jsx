@@ -20,17 +20,17 @@ export default function ProcessNode({ id, data }) {
   };
 
   return (
-    <div className="node-card min-w-[200px] p-4 relative bg-white rounded-xl shadow-node border border-gray-200 hover:shadow-node-hover transition-shadow duration-200 select-none">
+    <div className="node-card min-w-[200px] p-4 relative bg-white dark:bg-slate-900 rounded-xl shadow-node border border-gray-200 dark:border-slate-800 hover:shadow-node-hover transition-shadow duration-200 select-none">
       {/* Node Input/Output Handles */}
       <NodeHandle type="target" position={Position.Left} id="target-process" />
       <NodeHandle type="source" position={Position.Right} id="source-process" />
 
       {/* Header Info */}
       <div className="flex flex-col">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
           {version}
         </span>
-        <h3 className="text-sm font-semibold text-gray-800 mt-1">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-100 mt-1">
           Process Type
         </h3>
       </div>

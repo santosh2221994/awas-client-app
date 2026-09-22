@@ -41,11 +41,11 @@ export default function NavItem({ id, label, icon, isActive, isCollapsed, onClic
         "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm transition-all duration-150 outline-none",
         isCollapsed ? "justify-center" : "justify-start",
         isActive
-          ? "bg-gray-100 text-gray-900 font-medium"
-          : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+          ? "bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-white font-medium"
+          : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/60"
       )}
     >
-      <IconComponent className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-gray-900" : "text-gray-400")} />
+      <IconComponent className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-gray-900 dark:text-white" : "text-gray-400 dark:text-slate-500")} />
       {!isCollapsed && <span className="truncate">{label}</span>}
     </button>
   );

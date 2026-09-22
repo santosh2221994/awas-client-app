@@ -71,45 +71,45 @@ export default function CrewSection() {
 
   return (
     <div className="select-none">
-      <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-1 mb-2.5">
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 px-1 mb-2.5">
         Crew Nodes
       </h4>
       <div className="grid grid-cols-2 gap-2">
         {/* Add Agent Spawner Card */}
         <div
           onClick={handleAddAgent}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm cursor-pointer transition-all duration-150 group"
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-xl hover:border-blue-300 dark:hover:border-blue-500/50 hover:shadow-sm cursor-pointer transition-all duration-150 group"
           title="Click to spawn an Agent Node on canvas"
         >
-          <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <User className="w-5 h-5" />
           </div>
-          <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+          <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
             Agent
           </span>
-          <Plus className="w-3.5 h-3.5 text-gray-300 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Plus className="w-3.5 h-3.5 text-gray-300 dark:text-slate-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
         {/* Add Task Spawner Card */}
         <div
           onClick={handleAddTask}
-          className="flex flex-col items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-sm cursor-pointer transition-all duration-150 group"
+          className="flex flex-col items-center justify-center p-3 bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-xl hover:border-purple-300 dark:hover:border-purple-500/50 hover:shadow-sm cursor-pointer transition-all duration-150 group"
           title="Click to spawn a Task Node on canvas"
         >
-          <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-500 dark:text-purple-400 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
             <ClipboardList className="w-5 h-5" />
           </div>
-          <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+          <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
             Task
           </span>
-          <Plus className="w-3.5 h-3.5 text-gray-300 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Plus className="w-3.5 h-3.5 text-gray-300 dark:text-slate-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       </div>
 
       {/* List of Agents from Repository */}
       {agentsList.length > 0 && (
         <div className="mt-4.5 space-y-2.5">
-          <h5 className="text-[9px] font-bold uppercase tracking-wider text-gray-400 px-1">
+          <h5 className="text-[9px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 px-1">
             Add Specific Agent
           </h5>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5 scrollbar-thin">
@@ -117,23 +117,23 @@ export default function CrewSection() {
               <div
                 key={agent.id}
                 onClick={() => handleAddSpecificAgent(agent)}
-                className="flex items-center justify-between gap-2.5 px-2.5 py-1.5 rounded-lg border border-gray-100 bg-white hover:border-blue-200 hover:shadow-2xs cursor-pointer transition-all group/agent select-none"
+                className="flex items-center justify-between gap-2.5 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-blue-200 dark:hover:border-blue-500/50 hover:shadow-2xs cursor-pointer transition-all group/agent select-none"
                 title={`Click to add ${agent.name} to the canvas`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                  <div className="w-6 h-6 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-semibold text-gray-700 block truncate group-hover:text-gray-900 transition-colors">
+                    <span className="text-xs font-semibold text-gray-700 dark:text-slate-200 block truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                       {agent.name}
                     </span>
-                    <span className="text-[9px] text-gray-400 block truncate max-w-[170px]">
+                    <span className="text-[9px] text-gray-400 dark:text-slate-500 block truncate max-w-[170px]">
                       {agent.model || 'gpt-4o-mini'}
                     </span>
                   </div>
                 </div>
-                <button className="opacity-0 group-hover/agent:opacity-100 p-0.5 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all outline-none">
+                <button className="opacity-0 group-hover/agent:opacity-100 p-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900 transition-all outline-none">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>

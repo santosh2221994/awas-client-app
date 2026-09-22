@@ -5,6 +5,7 @@ import RightPanel from './features/right-panel/RightPanel';
 import AuthPage from './features/auth/AuthPage';
 import { useUIStore } from './stores/useUIStore';
 import { useSessionStore } from './stores/useSessionStore';
+import settingsService from './api/services/settingsService';
 
 const AgentsRepository = lazy(() => import('./features/agents/AgentsRepository'));
 const AgentDetail = lazy(() => import('./features/agents/AgentDetail'));
@@ -22,7 +23,7 @@ const FlowCanvas = lazy(() => import('./features/canvas/FlowCanvas'));
 
 function LoadingFallback() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-slate-50 text-slate-400 text-xs font-semibold select-none">
+    <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 text-xs font-semibold select-none">
       <div className="flex items-center gap-2">
         <div className="w-4 h-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
         <span>Loading view...</span>
@@ -77,6 +78,30 @@ export default function App() {
       window.location.hash = newHash;
     }
   }, [activeNavItem, selectedAgentId, selectedCrewAgentId, isAuthenticated]);
+
+  // Synchronize User Settings & Theme from Backend
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    settingsService
+      .getSettings()
+      .then((data) => {
+        const localTheme = typeof window !== 'undefined' && localStorage.getItem('awas-theme');
+        if (data?.appearance?.theme) {
+          if (!localTheme) {
+            useUIStore.getState().setTheme(data.appearance.theme);
+          } else if (localTheme !== data.appearance.theme) {
+            // Synchronize user local preference back to the backend
+            settingsService.updateAppearance({ theme: localTheme }).catch(() => {});
+          }
+        }
+        if (data?.appearance?.sidebarDefault) {
+          useUIStore.getState().setSidebarCollapsed(data.appearance.sidebarDefault === 'Collapsed');
+        }
+      })
+      .catch((err) => {
+        console.warn('[App] Failed to load remote appearance settings:', err);
+      });
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <AuthPage />;

@@ -137,7 +137,7 @@ function StatusBadge({ testStatus, isActiveInMastra }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border border-gray-200 dark:border-slate-700">
       <AlertCircle className="w-3 h-3" />
       Not Configured
     </span>
@@ -146,15 +146,15 @@ function StatusBadge({ testStatus, isActiveInMastra }) {
 
 function MaskedKeyDisplay({ maskedKey }) {
   const [revealed, setRevealed] = useState(false);
-  if (!maskedKey) return <span className="text-gray-300 text-xs italic">No key saved</span>;
+  if (!maskedKey) return <span className="text-gray-300 dark:text-slate-600 text-xs italic">No key saved</span>;
   return (
     <div className="flex items-center gap-1.5">
-      <code className="font-mono text-[11px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+      <code className="font-mono text-[11px] text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-gray-100 dark:border-slate-700">
         {maskedKey}
       </code>
       <button
         onClick={() => setRevealed((v) => !v)}
-        className="text-gray-400 hover:text-gray-600 transition"
+        className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition"
         title={revealed ? 'Hide' : 'Show'}
       >
         {revealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -291,12 +291,12 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
   return (
     <div
-      className={`bg-white border rounded-2xl shadow-xs overflow-hidden transition-all duration-200 ${
+      className={`bg-white dark:bg-slate-900 border rounded-2xl shadow-xs overflow-hidden transition-all duration-200 ${
         provider.isActiveInMastra
-          ? 'border-emerald-300 ring-1 ring-emerald-200'
+          ? 'border-emerald-300 dark:border-emerald-700 ring-1 ring-emerald-200 dark:ring-emerald-900/50'
           : isDefault && hasConfig
-          ? 'border-indigo-200 ring-1 ring-indigo-100'
-          : 'border-gray-200 hover:border-gray-300'
+          ? 'border-indigo-200 dark:border-indigo-800 ring-1 ring-indigo-100 dark:ring-indigo-900/50'
+          : 'border-gray-200 dark:border-slate-800 hover:border-gray-300 dark:hover:border-slate-700'
       }`}
     >
       {/* Card Header */}
@@ -310,14 +310,14 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-gray-900">{provider.displayName}</h3>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100">{provider.displayName}</h3>
                 {isDefault && hasConfig && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">
                     <Star className="w-2.5 h-2.5" /> Default
                   </span>
                 )}
                 {provider.isActiveInMastra && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wide">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
                     <Zap className="w-2.5 h-2.5" /> Mastra Active
                   </span>
                 )}
@@ -333,7 +333,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             <StatusBadge testStatus={testStatus} isActiveInMastra={provider.isActiveInMastra} />
             <button
               onClick={() => setExpanded((v) => !v)}
-              className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
             >
               {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             </button>
@@ -344,7 +344,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
         <div className="flex items-center gap-3 mt-3 flex-wrap">
           {/* Active model */}
           {(provider.isActiveInMastra && provider.activeModelId) || (hasConfig && cfg?.modelId) ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-gray-500 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md">
+            <span className="inline-flex items-center gap-1 text-[10px] font-mono text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 px-2 py-0.5 rounded-md">
               <Cpu className="w-3 h-3" />
               {provider.isActiveInMastra ? provider.activeModelId : cfg?.modelId}
             </span>
@@ -352,7 +352,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
           {/* Last tested */}
           {cfg?.lastTested && (
-            <span className="text-[10px] text-gray-400">
+            <span className="text-[10px] text-gray-400 dark:text-slate-500">
               Last tested: {new Date(cfg.lastTested).toLocaleString()}
             </span>
           )}
@@ -361,7 +361,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
           {provider.requiresApiKey && (
             <div className="flex items-center gap-1">
               {hasConfig && cfg?.hasApiKey ? (
-                <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+                <span className="inline-flex items-center gap-1 text-[10px] text-gray-500 dark:text-slate-400">
                   <Shield className="w-3 h-3 text-emerald-500" />
                   API key saved
                 </span>
@@ -376,7 +376,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
           {/* Local provider note */}
           {!provider.requiresApiKey && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600">
+            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
               <Lock className="w-3 h-3" />
               No API key required
             </span>
@@ -387,7 +387,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             href={provider.docsUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-0.5 text-[10px] text-indigo-500 hover:text-indigo-700 transition"
+            className="inline-flex items-center gap-0.5 text-[10px] text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition"
           >
             <ExternalLink className="w-2.5 h-2.5" />
             Docs
@@ -397,12 +397,12 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
       {/* Expanded Config Panel */}
       {expanded && (
-        <div className={`border-t ${meta.accentBorder} ${meta.accentBg} px-5 py-4 space-y-4`}>
+        <div className={`border-t ${meta.accentBorder} dark:border-slate-800 ${meta.accentBg} dark:bg-slate-850 px-5 py-4 space-y-4`}>
 
           {/* Model selector */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wide">
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-300 uppercase tracking-wide">
                 Default Model
               </label>
               {provider.providerId === 'lm-studio' && (
@@ -410,7 +410,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
                   type="button"
                   onClick={handleSyncModels}
                   disabled={syncing}
-                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 disabled:opacity-50 transition"
                   title="Query LM Studio at http://127.0.0.1:1234/v1/models"
                 >
                   <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
@@ -426,15 +426,15 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
               if (remoteList.length === 0) return null;
               const remoteNodes = Array.from(new Set(remoteList.flatMap((m) => m.devices || [m.device || 'Remote Node']))).filter((d) => d !== 'Local');
               return (
-                <div className="mb-2 flex items-center justify-between px-3 py-1.5 bg-purple-50/80 border border-purple-200/70 rounded-xl text-xs text-purple-900">
+                <div className="mb-2 flex items-center justify-between px-3 py-1.5 bg-purple-50/80 dark:bg-purple-950/50 border border-purple-200/70 dark:border-purple-800/50 rounded-xl text-xs text-purple-900 dark:text-purple-200">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs">🔗</span>
                     <span className="font-semibold text-[11px]">LM Link Cluster Active:</span>
-                    <span className="text-[10px] text-purple-700 font-mono font-medium">
+                    <span className="text-[10px] text-purple-700 dark:text-purple-300 font-mono font-medium">
                       {remoteNodes.join(', ')}
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-semibold bg-purple-100 dark:bg-purple-900/60 text-purple-800 dark:text-purple-300 px-2 py-0.5 rounded-full">
                     {remoteList.length} Remote Models
                   </span>
                 </div>
@@ -442,7 +442,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             })()}
 
             {syncSuccess && (
-              <p className="text-[10px] text-emerald-600 font-medium mb-1.5 flex items-center gap-1">
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mb-1.5 flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                 {syncSuccess}
               </p>
@@ -451,7 +451,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             <select
               value={modelId}
               onChange={(e) => setModelId(e.target.value)}
-              className="w-full text-xs bg-white border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition font-mono"
+              className="w-full text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition font-mono text-gray-900 dark:text-slate-100"
             >
               {(() => {
                 const currentList = liveModels?.length ? liveModels : (provider.models || []);
@@ -491,8 +491,8 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
           {/* API Key input (only for providers that need it) */}
           {provider.requiresApiKey && (
             <div>
-              <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wide mb-1.5">
-                API Key {hasConfig && cfg?.hasApiKey && <span className="text-emerald-600 font-semibold ml-1">• Saved</span>}
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-300 uppercase tracking-wide mb-1.5">
+                API Key {hasConfig && cfg?.hasApiKey && <span className="text-emerald-600 dark:text-emerald-400 font-semibold ml-1">• Saved</span>}
               </label>
               {hasConfig && cfg?.hasApiKey && (
                 <div className="mb-2">
@@ -505,11 +505,11 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
                   placeholder={hasConfig && cfg?.hasApiKey ? 'Enter new key to replace...' : `Enter ${provider.displayName} API key...`}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full text-xs font-mono bg-white border border-gray-200 rounded-lg px-3 pr-9 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-300"
+                  className="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 pr-9 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-slate-100"
                 />
                 <button
                   onClick={() => setApiKeyVisible((v) => !v)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition"
                 >
                   {apiKeyVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
@@ -520,7 +520,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
           {/* Base URL (for configurable providers) */}
           {provider.supportsBaseUrl && (
             <div>
-              <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-300 uppercase tracking-wide mb-1.5">
                 {provider.providerId === 'ollama' ? 'Ollama Host URL' : 'Base URL / Endpoint'}
               </label>
               <input
@@ -528,10 +528,10 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
                 placeholder={provider.defaultBaseUrl ?? 'http://localhost:...'}
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                className="w-full text-xs font-mono bg-white border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-300"
+                className="w-full text-xs font-mono bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-slate-100"
               />
-              <p className="text-[10px] text-gray-400 mt-1">
-                Default: <code className="font-mono">{provider.defaultBaseUrl}</code>
+              <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-1">
+                Default: <code className="font-mono text-gray-600 dark:text-slate-300">{provider.defaultBaseUrl}</code>
               </p>
             </div>
           )}
@@ -541,21 +541,21 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <div
                 onClick={() => setIsEnabled((v) => !v)}
-                className={`relative w-8 h-4 rounded-full transition-colors ${isEnabled ? 'bg-indigo-500' : 'bg-gray-200'}`}
+                className={`relative w-8 h-4 rounded-full transition-colors ${isEnabled ? 'bg-indigo-500' : 'bg-gray-200 dark:bg-slate-700'}`}
               >
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isEnabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
-              <span className="text-xs font-medium text-gray-600">Enabled</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-slate-300">Enabled</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <div
                 onClick={() => setIsDefault((v) => !v)}
-                className={`relative w-8 h-4 rounded-full transition-colors ${isDefault ? 'bg-amber-400' : 'bg-gray-200'}`}
+                className={`relative w-8 h-4 rounded-full transition-colors ${isDefault ? 'bg-amber-400' : 'bg-gray-200 dark:bg-slate-700'}`}
               >
                 <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isDefault ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </div>
-              <span className="text-xs font-medium text-gray-600">Set as Default</span>
+              <span className="text-xs font-medium text-gray-600 dark:text-slate-300">Set as Default</span>
             </label>
           </div>
 
@@ -563,8 +563,8 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
           {testResult && (
             <div className={`flex items-start gap-2 p-3 rounded-xl text-xs ${
               testResult.success
-                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300'
+                : 'bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300'
             }`}>
               {testResult.success ? <Wifi className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /> : <WifiOff className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />}
               <div>
@@ -579,7 +579,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
 
           {/* Save error */}
           {saveError && (
-            <div className="flex items-center gap-2 p-2.5 rounded-xl text-xs bg-red-50 border border-red-200 text-red-700">
+            <div className="flex items-center gap-2 p-2.5 rounded-xl text-xs bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-400">
               <XCircle className="w-3.5 h-3.5 flex-shrink-0" />
               {saveError}
             </div>
@@ -591,7 +591,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
             <button
               onClick={handleTest}
               disabled={testing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-750 disabled:opacity-50 transition"
             >
               {testing ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -626,7 +626,7 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition"
+                className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-red-200 dark:border-red-900/50 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 disabled:opacity-50 transition"
               >
                 {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                 Remove
@@ -647,22 +647,22 @@ function ProviderCard({ provider, onSave, onDelete, onTest }) {
                   m.recommended
                     ? `${meta.badge} font-semibold`
                     : m.isRemote
-                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                    : 'bg-gray-100 text-gray-600'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300'
                 }`}
               >
                 {m.isLoaded && <span className="text-[8px]">🟢</span>}
                 {m.isRemote && <span className="text-[8px]">☁️</span>}
                 <span>{m.modelId}</span>
                 {m.isRemote && (
-                  <span className="text-[8px] font-semibold text-purple-500 font-sans">
+                  <span className="text-[8px] font-semibold text-purple-500 dark:text-purple-400 font-sans">
                     ({m.deviceTag || m.device || 'Remote'})
                   </span>
                 )}
               </span>
             ))}
             {((liveModels?.length ? liveModels : (provider.models || [])).length ?? 0) > 8 && (
-              <span className="text-[9px] text-gray-400">
+              <span className="text-[9px] text-gray-400 dark:text-slate-500">
                 +{((liveModels?.length ? liveModels : (provider.models || [])).length) - 8} more
               </span>
             )}
@@ -752,32 +752,32 @@ export default function LLMConnectionsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-50 select-none">
+      <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950 select-none">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" />
-          <p className="text-sm text-gray-500 font-medium">Loading LLM providers from Mastra...</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 font-medium">Loading LLM providers from Mastra...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-slate-50/50 overflow-y-auto select-none">
+    <div className="flex-1 bg-slate-50/50 dark:bg-slate-950 overflow-y-auto select-none">
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200/80 px-8 py-6">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-8 py-6">
         <div className="max-w-5xl mx-auto flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-              <Cpu className="w-5 h-5 text-indigo-600" />
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight flex items-center gap-2">
+              <Cpu className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               LLM Connections
             </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
               Configure and manage LLM providers available to your Mastra AI agents
             </p>
           </div>
           <button
             onClick={loadProviders}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
@@ -789,12 +789,12 @@ export default function LLMConnectionsPage() {
 
         {/* ── Error banner ───────────────────────────────────────────────── */}
         {error && (
-          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl text-sm">
+          <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800/50 rounded-2xl text-sm">
             <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-semibold text-red-800">Failed to load providers</p>
-              <p className="text-red-600 text-xs mt-0.5">{error}</p>
-              <button onClick={loadProviders} className="text-xs text-red-700 underline mt-1">Retry</button>
+              <p className="font-semibold text-red-800 dark:text-red-300">Failed to load providers</p>
+              <p className="text-red-600 dark:text-red-400 text-xs mt-0.5">{error}</p>
+              <button onClick={loadProviders} className="text-xs text-red-700 dark:text-red-300 underline mt-1">Retry</button>
             </div>
           </div>
         )}
@@ -802,23 +802,23 @@ export default function LLMConnectionsPage() {
         {/* ── Summary Cards ───────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Providers', value: providers.length, cls: 'text-gray-900' },
-            { label: 'Active in Mastra', value: activeCount, cls: 'text-emerald-600' },
-            { label: 'Configured', value: configuredCount, cls: 'text-indigo-600' },
-            { label: 'Default Provider', value: defaultProvider?.displayName ?? 'Not set', cls: 'text-amber-600', small: true },
+            { label: 'Total Providers', value: providers.length, cls: 'text-gray-900 dark:text-slate-100' },
+            { label: 'Active in Mastra', value: activeCount, cls: 'text-emerald-600 dark:text-emerald-400' },
+            { label: 'Configured', value: configuredCount, cls: 'text-indigo-600 dark:text-indigo-400' },
+            { label: 'Default Provider', value: defaultProvider?.displayName ?? 'Not set', cls: 'text-amber-600 dark:text-amber-400', small: true },
           ].map((s) => (
-            <div key={s.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs">
+            <div key={s.label} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
               <div className={`${s.small ? 'text-sm' : 'text-2xl'} font-bold ${s.cls}`}>{s.value}</div>
-              <div className="text-[11px] text-gray-500 mt-1">{s.label}</div>
+              <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* ── Info Banner ─────────────────────────────────────────────────── */}
-        <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
           <Info className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-indigo-700 space-y-1">
-            <p className="font-semibold text-indigo-800">Model routing in Mastra</p>
+          <div className="text-xs text-indigo-700 dark:text-indigo-300 space-y-1">
+            <p className="font-semibold text-indigo-800 dark:text-indigo-200">Model routing in Mastra</p>
             <p>
               The provider marked <span className="font-bold">Mastra Active</span> is the one currently used by the AI engine (auto-resolved from environment variables).
               Configure and save a provider here to update what your agents use by default.
@@ -830,17 +830,17 @@ export default function LLMConnectionsPage() {
         {/* ── Filters ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="relative flex-1 max-w-sm">
-            <Settings2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <Settings2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 dark:text-slate-500" />
             <input
               type="text"
               placeholder="Search providers or models..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs bg-white border border-gray-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-400"
+              className="w-full text-xs bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition placeholder-gray-400 dark:placeholder-slate-500 text-gray-900 dark:text-slate-100"
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-0.5">
+          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-lg p-0.5">
             {[
               { id: 'all', label: 'All' },
               { id: 'cloud', label: '☁️ Cloud' },
@@ -853,7 +853,7 @@ export default function LLMConnectionsPage() {
                 className={`px-3 py-1 rounded-md text-[11px] font-semibold transition ${
                   filterType === tab.id
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
                 }`}
               >
                 {tab.label}
@@ -864,7 +864,7 @@ export default function LLMConnectionsPage() {
 
         {/* ── Provider Cards ───────────────────────────────────────────────── */}
         {filtered.length === 0 ? (
-          <div className="py-16 text-center text-gray-400 text-sm">
+          <div className="py-16 text-center text-gray-400 dark:text-slate-500 text-sm">
             {providers.length === 0 ? 'No providers loaded.' : 'No providers match your search.'}
           </div>
         ) : (
@@ -882,10 +882,10 @@ export default function LLMConnectionsPage() {
         )}
 
         {/* ── Local Privacy Note ──────────────────────────────────────────── */}
-        <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+        <div className="flex items-start gap-3 p-4 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl">
           <Lock className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-emerald-700">
-            <p className="font-semibold text-emerald-800 mb-0.5">Privacy Mode</p>
+          <div className="text-xs text-emerald-700 dark:text-emerald-300">
+            <p className="font-semibold text-emerald-800 dark:text-emerald-200 mb-0.5">Privacy Mode</p>
             <p>
               Ollama and LM Studio run <span className="font-bold">100% on your machine</span> — no data leaves your premises.
               Use these providers for mission-critical or sensitive tasks.

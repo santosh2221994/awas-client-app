@@ -46,7 +46,7 @@ export default function ToolsSection() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-1 mb-2.5 mt-2">
+      <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500 px-1 mb-2.5 mt-2">
         Tool Library
       </h4>
 
@@ -71,7 +71,7 @@ export default function ToolsSection() {
             />
           ))
         ) : (
-          <div className="text-xs text-gray-400 text-center py-6 italic select-none">
+          <div className="text-xs text-gray-400 dark:text-slate-500 text-center py-6 italic select-none">
             No matching tools found
           </div>
         )}

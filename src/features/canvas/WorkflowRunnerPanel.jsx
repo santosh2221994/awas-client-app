@@ -214,40 +214,40 @@ Workflow run completed successfully with 0 errors.`;
   const activeRawData = selectedTimelineItem ? selectedTimelineItem.rawEvent : timelineTasks[0]?.rawEvent ?? null;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden font-sans">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden font-sans">
       {/* Top Controls Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-2xs shrink-0">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between shadow-2xs shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
             <Bot className="w-4 h-4" />
           </div>
           <div>
             {hasWorkflow ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-900">{agentName}</span>
+                <span className="text-xs font-bold text-gray-900 dark:text-slate-100">{agentName}</span>
                 {modelName && <Badge variant="indigo">{modelName}</Badge>}
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-800/60">
                   Auth Verified
                 </span>
               </div>
             ) : (
-              <span className="text-xs font-bold text-gray-400">No workflow configured</span>
+              <span className="text-xs font-bold text-gray-400 dark:text-slate-500">No workflow configured</span>
             )}
-            {hasWorkflow && taskName && <p className="text-[11px] text-gray-500">{taskName}</p>}
+            {hasWorkflow && taskName && <p className="text-[11px] text-gray-500 dark:text-slate-400">{taskName}</p>}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {hasWorkflow && (
-            <div className="flex items-center gap-2 border-r border-gray-200 pr-3">
-              <span className="text-[11px] text-gray-500 font-medium">Auth Agents:</span>
+            <div className="flex items-center gap-2 border-r border-gray-200 dark:border-slate-800 pr-3">
+              <span className="text-[11px] text-gray-500 dark:text-slate-400 font-medium">Auth Agents:</span>
               <select
                 value={authAgentCount}
                 onChange={(e) => setAuthAgentCount(Number(e.target.value))}
-                className="border border-gray-200 bg-white rounded-lg px-2 py-1 text-xs font-bold text-gray-800 outline-none hover:bg-gray-50 cursor-pointer"
+                className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg px-2 py-1 text-xs font-bold text-gray-800 dark:text-slate-200 outline-none hover:bg-gray-50 dark:hover:bg-slate-750 cursor-pointer"
               >
                 {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>{n} Agent{n > 1 ? 's' : ''}</option>
+                  <option key={n} value={n} className="dark:bg-slate-900 dark:text-slate-200">{n} Agent{n > 1 ? 's' : ''}</option>
                 ))}
               </select>
             </div>
@@ -269,13 +269,13 @@ Workflow run completed successfully with 0 errors.`;
       {/* Empty state — no workflow built yet */}
       {!hasWorkflow ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8 select-none">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-            <Layers className="w-8 h-8 text-slate-300" />
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-850 flex items-center justify-center">
+            <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600" />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-700">No workflow built yet</p>
-            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Switch to the <span className="font-semibold text-indigo-500">Canvas</span> tab and add agents &amp; tasks<br />
+            <p className="text-sm font-bold text-gray-700 dark:text-slate-200">No workflow built yet</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1 leading-relaxed">
+              Switch to the <span className="font-semibold text-indigo-500 dark:text-indigo-400">Canvas</span> tab and add agents &amp; tasks<br />
               to your workflow, then come back to run it.
             </p>
           </div>
@@ -285,20 +285,20 @@ Workflow run completed successfully with 0 errors.`;
         {/* Main Studio v2 Execution View Split Pane */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Pane: Interactive Execution Timeline (matching Screenshot 2) */}
-          <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col h-full overflow-y-auto p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="w-1/2 border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full overflow-y-auto p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-500" />
-              <h2 className="text-sm font-bold text-gray-900 tracking-tight">Timeline</h2>
+              <Activity className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+              <h2 className="text-sm font-bold text-gray-900 dark:text-slate-100 tracking-tight">Timeline</h2>
             </div>
-            <span className="text-[11px] text-gray-400 font-mono">
+            <span className="text-[11px] text-gray-400 dark:text-slate-500 font-mono">
               {executionState === 'running' ? 'Executing live events...' : '3 Task Steps Recorded'}
             </span>
           </div>
 
           {/* Input Prompt Card */}
-          <div className="bg-slate-50 border border-gray-200 rounded-xl p-3.5 space-y-1.5">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          <div className="bg-slate-50 dark:bg-slate-850/70 border border-gray-200 dark:border-slate-800 rounded-xl p-3.5 space-y-1.5">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-slate-500">
               Workflow Parameter Input
             </label>
             <textarea
@@ -306,7 +306,7 @@ Workflow run completed successfully with 0 errors.`;
               value={inputTopic}
               onChange={(e) => setInputTopic(e.target.value)}
               disabled={executionState === 'running'}
-              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none resize-none font-medium text-gray-800"
+              className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500 outline-none resize-none font-medium text-gray-800 dark:text-slate-100"
             />
           </div>
 
@@ -321,7 +321,7 @@ Workflow run completed successfully with 0 errors.`;
                   key={tTask.id}
                   onClick={() => setSelectedTimelineItem(tTask)}
                   className={`border rounded-xl transition-all cursor-pointer ${
-                    isSelected ? 'border-indigo-400 bg-indigo-50/20 shadow-xs' : 'border-gray-200 bg-white hover:border-gray-300'
+                    isSelected ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/30 shadow-xs' : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-gray-300 dark:hover:border-slate-700'
                   }`}
                 >
                   {/* Task Header Bar */}
@@ -330,20 +330,20 @@ Workflow run completed successfully with 0 errors.`;
                       e.stopPropagation();
                       setExpandedTimelineTasks((prev) => ({ ...prev, [idx]: !prev[idx] }));
                     }}
-                    className="flex items-center justify-between p-3.5 hover:bg-slate-50/60 rounded-t-xl"
+                    className="flex items-center justify-between p-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 rounded-t-xl"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-gray-400 dark:text-slate-500 shrink-0" />
                       )}
-                      <span className="text-xs font-bold text-gray-900 truncate">{tTask.title}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-slate-100 truncate">{tTask.title}</span>
                     </div>
 
-                    <div className="flex items-center gap-3 text-[11px] font-mono text-gray-400 shrink-0">
+                    <div className="flex items-center gap-3 text-[11px] font-mono text-gray-400 dark:text-slate-500 shrink-0">
                       <span>{tTask.duration}</span>
-                      <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold">
+                      <span className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-sans font-semibold">
                         1 task
                       </span>
                     </div>
@@ -351,39 +351,39 @@ Workflow run completed successfully with 0 errors.`;
 
                   {/* Expanded Sub-steps Tree */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-gray-100 ml-3 pl-4 border-l-2 border-l-gray-200">
-                      <div className="flex items-center justify-between text-[11px] font-semibold text-gray-800">
+                    <div className="px-4 pb-4 pt-1 space-y-2 border-t border-gray-100 dark:border-slate-800 ml-3 pl-4 border-l-2 border-l-gray-200 dark:border-l-slate-700">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-gray-800 dark:text-slate-200">
                         <div className="flex items-center gap-2">
-                          <FileCode className="w-3.5 h-3.5 text-indigo-500" />
+                          <FileCode className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                           <span>{tTask.subStepName}</span>
                         </div>
-                        <span className="font-mono text-gray-400 text-[10px]">{tTask.subDuration}</span>
+                        <span className="font-mono text-gray-400 dark:text-slate-500 text-[10px]">{tTask.subDuration}</span>
                       </div>
 
                       {/* Sub-step Timeline Events */}
-                      <div className="space-y-1.5 text-[11px] font-mono pl-3 text-gray-600 border-l border-dashed border-gray-200">
+                      <div className="space-y-1.5 text-[11px] font-mono pl-3 text-gray-600 dark:text-slate-400 border-l border-dashed border-gray-200 dark:border-slate-750">
                         <div className="flex items-center justify-between py-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
                             <span>Started</span>
                           </div>
-                          <span className="text-slate-400">+0.00s</span>
+                          <span className="text-slate-400 dark:text-slate-500">+0.00s</span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 text-indigo-600 font-semibold">
+                        <div className="flex items-center justify-between py-0.5 text-indigo-600 dark:text-indigo-400 font-semibold">
                           <div className="flex items-center gap-2">
                             <Zap className="w-3 h-3 text-amber-500" />
                             <span>LLM call</span>
                           </div>
-                          <span className="text-indigo-500">{tTask.llmLatency}</span>
+                          <span className="text-indigo-500 dark:text-indigo-400">{tTask.llmLatency}</span>
                         </div>
 
-                        <div className="flex items-center justify-between py-0.5 text-emerald-600 font-semibold">
+                        <div className="flex items-center justify-between py-0.5 text-emerald-600 dark:text-emerald-400 font-semibold">
                           <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
                             <span>Completed</span>
                           </div>
-                          <span className="text-emerald-500">{tTask.completedOffset}</span>
+                          <span className="text-emerald-500 dark:text-emerald-400">{tTask.completedOffset}</span>
                         </div>
                       </div>
                     </div>
@@ -394,14 +394,14 @@ Workflow run completed successfully with 0 errors.`;
           </div>
 
           {/* Suggestion Callout Box (matching Screenshot 2) */}
-          <div className="bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl p-4 space-y-3 shadow-md mt-auto">
-            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <span className="flex items-center gap-1.5 text-indigo-400">
+          <div className="bg-indigo-50/60 dark:bg-slate-900 border border-indigo-100 dark:border-slate-800 text-gray-800 dark:text-slate-100 rounded-2xl p-4 space-y-3 shadow-sm mt-auto">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-slate-400">
+              <span className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
                 <Sparkles className="w-3.5 h-3.5" /> Suggestion
               </span>
-              <button className="text-slate-400 hover:text-slate-200">Dismiss</button>
+              <button className="text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">Dismiss</button>
             </div>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-gray-600 dark:text-slate-300">
               I have suggestions to help you move forward with your automation.
             </p>
             <Button
@@ -415,15 +415,15 @@ Workflow run completed successfully with 0 errors.`;
         </div>
 
         {/* Right Pane: Event Details & Raw Data Inspector (matching Screenshot 2) */}
-        <div className="w-1/2 bg-slate-50 flex flex-col h-full overflow-hidden">
+        <div className="w-1/2 bg-slate-50 dark:bg-slate-950 flex flex-col h-full overflow-hidden">
           {/* Header & Tabs */}
-          <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shrink-0">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">Event details</h3>
-            <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+          <div className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between shrink-0">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400">Event details</h3>
+            <div className="flex bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700">
               <button
                 onClick={() => setInspectorTab('details')}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  inspectorTab === 'details' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-800'
+                  inspectorTab === 'details' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 shadow-xs' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
                 }`}
               >
                 Details
@@ -431,7 +431,7 @@ Workflow run completed successfully with 0 errors.`;
               <button
                 onClick={() => setInspectorTab('raw')}
                 className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                  inspectorTab === 'raw' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-800'
+                  inspectorTab === 'raw' ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 shadow-xs' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
                 }`}
               >
                 Raw Data
@@ -442,50 +442,50 @@ Workflow run completed successfully with 0 errors.`;
           {/* Inspector Body */}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
             {inspectorTab === 'raw' ? (
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-3 font-mono">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-                  <span className="text-xs font-bold text-gray-700 flex items-center gap-2">
-                    <Code2 className="w-4 h-4 text-indigo-500" /> Raw Data (6 fields)
+              <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3 font-mono">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-2.5">
+                  <span className="text-xs font-bold text-gray-700 dark:text-slate-200 flex items-center gap-2">
+                    <Code2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" /> Raw Data (6 fields)
                   </span>
-                  <span className="text-[10px] text-gray-400">Raw JSON</span>
+                  <span className="text-[10px] text-gray-400 dark:text-slate-500">Raw JSON</span>
                 </div>
 
-                <div className="bg-slate-900 text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed">
+                <div className="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-4 text-xs overflow-x-auto leading-relaxed">
                   <pre className="font-mono text-xs">{JSON.stringify(activeRawData, null, 2)}</pre>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Execution Summary</h4>
+                <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3">
+                    <h4 className="text-xs font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider">Execution Summary</h4>
                     <Badge variant="emerald">200 OK Success</Badge>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
-                      <span className="text-gray-400 block text-[10px] uppercase">Workflow Agent</span>
-                      <span className="font-bold text-gray-800">{agentName}</span>
+                      <span className="text-gray-400 dark:text-slate-500 block text-[10px] uppercase">Workflow Agent</span>
+                      <span className="font-bold text-gray-800 dark:text-slate-200">{agentName}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400 block text-[10px] uppercase">Model</span>
-                      <span className="font-bold text-indigo-600">{modelName}</span>
+                      <span className="text-gray-400 dark:text-slate-500 block text-[10px] uppercase">Model</span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400">{modelName}</span>
                     </div>
                     <div>
-                      <span className="text-gray-400 block text-[10px] uppercase">Auth Agent Count</span>
-                      <span className="font-bold text-gray-800">{authAgentCount} Active Agent(s)</span>
+                      <span className="text-gray-400 dark:text-slate-500 block text-[10px] uppercase">Auth Agent Count</span>
+                      <span className="font-bold text-gray-800 dark:text-slate-200">{authAgentCount} Active Agent(s)</span>
                     </div>
                     <div>
-                      <span className="text-gray-400 block text-[10px] uppercase">Duration</span>
-                      <span className="font-bold text-gray-800">{metrics?.duration || '3.69s'}</span>
+                      <span className="text-gray-400 dark:text-slate-500 block text-[10px] uppercase">Duration</span>
+                      <span className="font-bold text-gray-800 dark:text-slate-200">{metrics?.duration || '3.69s'}</span>
                     </div>
                   </div>
                 </div>
 
                 {outputResult && (
-                  <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-2">
-                    <span className="text-xs font-bold text-gray-800 block">Final Output Payload</span>
-                    <div className="bg-slate-900 text-slate-100 rounded-xl p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
+                  <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
+                    <span className="text-xs font-bold text-gray-800 dark:text-slate-200 block">Final Output Payload</span>
+                    <div className="bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-xl p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
                       {outputResult}
                     </div>
                   </div>

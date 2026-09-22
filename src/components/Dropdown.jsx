@@ -31,24 +31,24 @@ export default function Dropdown({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          'bg-white border border-gray-200 rounded-lg text-sm px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-colors w-full',
-          isOpen && 'ring-2 ring-indigo-500/20 border-indigo-400'
+          'bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-700 rounded-lg text-sm px-3 py-1.5 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-100 transition-colors w-full',
+          isOpen && 'ring-2 ring-indigo-500/20 border-indigo-400 dark:border-indigo-500'
         )}
       >
-        <span className={cn('flex-1 text-left', !selectedOption && 'text-gray-400')}>
+        <span className={cn('flex-1 text-left', !selectedOption && 'text-gray-400 dark:text-slate-500')}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
           size={14}
           className={cn(
-            'text-gray-400 transition-transform duration-200',
+            'text-gray-400 dark:text-slate-500 transition-transform duration-200',
             isOpen && 'rotate-180'
           )}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px] w-full animate-fade-in">
+        <div className="absolute z-50 mt-1 bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-xl shadow-lg py-1 min-w-[160px] w-full animate-fade-in">
           {options.map((option) => (
             <div
               key={option.value}
@@ -57,10 +57,10 @@ export default function Dropdown({
                 setIsOpen(false);
               }}
               className={cn(
-                'hover:bg-gray-50 px-3 py-2 cursor-pointer text-sm transition-colors',
+                'hover:bg-gray-50 dark:hover:bg-slate-800 px-3 py-2 cursor-pointer text-sm transition-colors',
                 option.value === value
-                  ? 'text-indigo-600 font-medium bg-indigo-50/50'
-                  : 'text-gray-700'
+                  ? 'text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50/50 dark:bg-indigo-950/50'
+                  : 'text-gray-700 dark:text-slate-200'
               )}
             >
               {option.label}

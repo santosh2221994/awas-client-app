@@ -47,10 +47,10 @@ export default function ChatSidebar({ agentId }) {
     : (activeSession?.label || 'Studio Chat');
 
   return (
-    <div className="w-80 h-full flex flex-col bg-gray-50 border-r border-gray-200 shrink-0">
+    <div className="w-80 h-full flex flex-col bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 shrink-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white select-none">
-        <span className="text-sm font-semibold text-gray-800 truncate">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 select-none">
+        <span className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">
           {headerTitle}
         </span>
 
@@ -59,32 +59,32 @@ export default function ChatSidebar({ agentId }) {
           <div ref={historyRef} className="relative">
             <button
               onClick={() => setHistoryOpen((v) => !v)}
-              className="w-7 h-7 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all outline-none border border-transparent hover:border-gray-100"
+              className="w-7 h-7 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 transition-all outline-none border border-transparent hover:border-gray-100 dark:hover:border-slate-700"
               title="Chat History"
             >
               <Clock className="w-4 h-4" />
             </button>
 
             {historyOpen && (
-              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                <div className="px-3 py-2 border-b border-gray-100">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Chat History</span>
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-800">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500">Chat History</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
                   {sessions.map((session) => (
                     <button
                       key={session.id}
                       onClick={(e) => { e.stopPropagation(); switchSession(session.id); setHistoryOpen(false); }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors ${session.id === activeSessionId ? 'bg-indigo-50' : ''}`}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors ${session.id === activeSessionId ? 'bg-indigo-50 dark:bg-slate-800/80' : ''}`}
                     >
-                      <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${session.id === activeSessionId ? 'text-indigo-500' : 'text-gray-400'}`} />
+                      <MessageSquare className={`w-3.5 h-3.5 shrink-0 ${session.id === activeSessionId ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-500'}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold truncate ${session.id === activeSessionId ? 'text-indigo-700' : 'text-gray-700'}`}>
+                        <p className={`text-xs font-semibold truncate ${session.id === activeSessionId ? 'text-indigo-700 dark:text-indigo-400' : 'text-gray-700 dark:text-slate-300'}`}>
                           {session.label}
                         </p>
-                        <p className="text-[10px] text-gray-400">{session.messages.length} message{session.messages.length !== 1 ? 's' : ''}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-slate-500">{session.messages.length} message{session.messages.length !== 1 ? 's' : ''}</p>
                       </div>
-                      {session.id === activeSessionId && <Check className="w-3 h-3 text-indigo-500 shrink-0" />}
+                      {session.id === activeSessionId && <Check className="w-3 h-3 text-indigo-500 dark:text-indigo-400 shrink-0" />}
                     </button>
                   ))}
                 </div>
@@ -95,7 +95,7 @@ export default function ChatSidebar({ agentId }) {
           {/* New Chat icon */}
           <button
             onClick={() => newChat(activeAgentId)}
-            className="w-7 h-7 rounded-lg hover:bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all outline-none border border-transparent hover:border-gray-100"
+            className="w-7 h-7 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 flex items-center justify-center text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 transition-all outline-none border border-transparent hover:border-gray-100 dark:hover:border-slate-700"
             title="New Chat"
           >
             <Plus className="w-4 h-4" />
@@ -107,16 +107,16 @@ export default function ChatSidebar({ agentId }) {
       <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6 select-none">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+              <svg className="w-5 h-5 text-indigo-500 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.84L3 20l1.09-3.27C3.4 15.5 3 13.8 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-800">
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">
                 {isAgentBuilder ? 'Create an Agent with AI' : 'How may I help you?'}
               </p>
-              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">
+              <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1 leading-relaxed">
                 {isAgentBuilder ? (
                   <>Describe what agent you want to create.<br />I'll help draft system prompts & tools.</>
                 ) : (

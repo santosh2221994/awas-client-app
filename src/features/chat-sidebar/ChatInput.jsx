@@ -28,8 +28,8 @@ export default function ChatInput({ onSend }) {
   }, [text]);
 
   return (
-    <div className="bg-white border-t border-gray-200 p-3">
-      <div className="bg-white border border-gray-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400 transition-all">
+    <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-3">
+      <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-750 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400 dark:focus-within:border-indigo-500 transition-all">
         <textarea
           ref={textareaRef}
           value={text}
@@ -37,21 +37,21 @@ export default function ChatInput({ onSend }) {
           onKeyDown={handleKeyDown}
           placeholder="Ask, build,... (Shift + Enter for new line)"
           rows={1}
-          className="w-full resize-none bg-transparent outline-none text-sm text-gray-900 placeholder-gray-400 px-2 py-1 min-h-[32px] max-h-[120px] scrollbar-thin"
+          className="w-full resize-none bg-transparent outline-none text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 px-2 py-1 min-h-[32px] max-h-[120px] scrollbar-thin"
         />
         
-        <div className="flex items-center justify-between mt-1 px-1 border-t border-gray-50 pt-2">
+        <div className="flex items-center justify-between mt-1 px-1 border-t border-gray-50 dark:border-slate-800 pt-2">
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-50 transition-colors outline-none"
+              className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors outline-none"
               title="Attach files"
             >
               <Paperclip className="w-4 h-4" />
             </button>
             <button
               type="button"
-              className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-50 transition-colors outline-none"
+              className="text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors outline-none"
               title="Voice input"
             >
               <Mic className="w-4 h-4" />

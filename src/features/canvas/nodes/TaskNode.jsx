@@ -31,7 +31,7 @@ export default function TaskNode({ id, data }) {
         return (
           <span
             key={index}
-            className="inline-block bg-purple-50 text-purple-700 font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border border-purple-100 mx-0.5"
+            className="inline-block bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-800/60 mx-0.5"
           >
             {part}
           </span>
@@ -42,7 +42,7 @@ export default function TaskNode({ id, data }) {
   };
 
   return (
-    <div className="node-card border-l-4 border-l-purple-500 min-w-[260px] max-w-[300px] p-0 bg-white rounded-xl shadow-node border border-gray-200 hover:shadow-node-hover transition-shadow duration-200 select-none group/node">
+    <div className="node-card border-l-4 border-l-purple-500 min-w-[260px] max-w-[300px] p-0 bg-white dark:bg-slate-900 rounded-xl shadow-node border border-gray-200 dark:border-slate-800 hover:shadow-node-hover transition-shadow duration-200 select-none group/node">
       {/* Node Handles */}
       <NodeHandle type="target" position={Position.Left} id="target-task" />
       <NodeHandle type="source" position={Position.Right} id="source-task" />
@@ -50,16 +50,16 @@ export default function TaskNode({ id, data }) {
       <NodeHandle type="source" position={Position.Bottom} id="source-task-bottom" />
 
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-tr-xl">
+      <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-850/50 rounded-tr-xl">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-500 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
             <ClipboardList className="w-4 h-4" />
           </div>
           <div className="min-w-0 font-sans">
-            <h3 className="text-xs font-bold text-gray-900 truncate" title={displayTitle.replace(/^Task Runner -\s*/i, '')}>
+            <h3 className="text-xs font-bold text-gray-900 dark:text-slate-100 truncate" title={displayTitle.replace(/^Task Runner -\s*/i, '')}>
               {displayTitle.replace(/^Task Runner -\s*/i, '')}
             </h3>
-            <span className="text-[10px] text-gray-400 block truncate">
+            <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">
               Task Runner
             </span>
           </div>
@@ -71,7 +71,7 @@ export default function TaskNode({ id, data }) {
             e.stopPropagation();
             removeNode(id);
           }}
-          className="opacity-0 group-hover/node:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-gray-100 transition-all duration-150 outline-none"
+          className="opacity-0 group-hover/node:opacity-100 text-gray-400 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-150 outline-none"
           title="Delete Task"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -80,25 +80,25 @@ export default function TaskNode({ id, data }) {
 
       {/* Body */}
       <div className="p-3">
-        <div className="text-xs text-gray-500 leading-relaxed font-sans">
+        <div className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed font-sans">
           {parseDescription(description)}
         </div>
 
         {/* Expected Output */}
         {expectedOutput && (
-          <div className="mt-3.5 border-t border-gray-100 pt-3">
-            <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 block mb-1">
+          <div className="mt-3.5 border-t border-gray-100 dark:border-slate-800 pt-3">
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 block mb-1">
               Expected Output
             </span>
-            <p className="text-xs text-gray-600 bg-gray-50/50 border border-gray-100 rounded-lg p-2 leading-relaxed font-sans">
+            <p className="text-xs text-gray-600 dark:text-slate-300 bg-gray-50/50 dark:bg-slate-800/40 border border-gray-100 dark:border-slate-750 rounded-lg p-2 leading-relaxed font-sans">
               {expectedOutput}
             </p>
           </div>
         )}
 
         {/* Assigned Agent */}
-        <div className="mt-3.5 border-t border-gray-100 pt-3">
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 block mb-1.5">
+        <div className="mt-3.5 border-t border-gray-100 dark:border-slate-800 pt-3">
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 block mb-1.5">
             Assigned Agent
           </span>
           <select
@@ -106,14 +106,14 @@ export default function TaskNode({ id, data }) {
             onChange={(e) => {
               updateNodeData(id, { assignedAgent: e.target.value });
             }}
-            className="w-full text-xs bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 outline-none hover:bg-gray-100/50 cursor-pointer font-sans"
+            className="w-full text-xs bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 font-semibold text-gray-700 dark:text-slate-200 outline-none hover:bg-gray-100/50 dark:hover:bg-slate-750 cursor-pointer font-sans"
           >
-            <option value="">Unassigned</option>
+            <option value="" className="dark:bg-slate-900 dark:text-slate-300">Unassigned</option>
             {assignedAgent && !agentsList.some(a => a.name === assignedAgent) && (
-              <option value={assignedAgent}>{assignedAgent}</option>
+              <option value={assignedAgent} className="dark:bg-slate-900 dark:text-slate-100">{assignedAgent}</option>
             )}
             {agentsList.map((a) => (
-              <option key={a.id} value={a.name}>
+              <option key={a.id} value={a.name} className="dark:bg-slate-900 dark:text-slate-100">
                 {a.name}
               </option>
             ))}

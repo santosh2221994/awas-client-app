@@ -15,16 +15,16 @@ export default function Accordion({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 rounded-lg transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800/60 rounded-lg transition-colors"
       >
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          {Icon && <Icon size={16} className="text-gray-400" />}
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-300">
+          {Icon && <Icon size={16} className="text-gray-400 dark:text-slate-400" />}
           <span>{title}</span>
         </div>
         <ChevronRight
           size={14}
           className={cn(
-            'text-gray-400 transition-transform duration-200',
+            'text-gray-400 dark:text-slate-400 transition-transform duration-200',
             isOpen && 'rotate-90'
           )}
         />

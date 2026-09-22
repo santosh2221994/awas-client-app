@@ -244,9 +244,9 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
       parts.forEach((part, partIdx) => {
         const key = `${lineIdx}-${partIdx}`;
         if (part.startsWith('**') && part.endsWith('**')) {
-          result.push(<strong key={key} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>);
+          result.push(<strong key={key} className="font-semibold text-gray-900 dark:text-slate-100">{part.slice(2, -2)}</strong>);
         } else if (part.startsWith('`') && part.endsWith('`')) {
-          result.push(<code key={key} className="font-mono text-xs bg-gray-100 text-indigo-600 px-1 py-0.5 rounded">{part.slice(1, -1)}</code>);
+          result.push(<code key={key} className="font-mono text-xs bg-gray-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1 py-0.5 rounded">{part.slice(1, -1)}</code>);
         } else {
           result.push(<React.Fragment key={key}>{part}</React.Fragment>);
         }
@@ -274,7 +274,7 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
 
         {isCode ? (
           <div 
-            className="font-mono text-xs bg-gray-800 text-emerald-400 rounded-xl px-4 py-3 shadow-sm border border-gray-700/50 whitespace-pre overflow-x-auto scrollbar-thin"
+            className="font-mono text-xs bg-gray-800 dark:bg-slate-900 text-emerald-400 rounded-xl px-4 py-3 shadow-sm border border-gray-700/50 dark:border-slate-800 whitespace-pre overflow-x-auto scrollbar-thin"
           >
             {content}
           </div>
@@ -283,13 +283,13 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
             className={cn(
               'px-4 py-2.5 text-sm leading-relaxed shadow-sm',
               isUser
-                ? 'bg-gray-900 text-white rounded-2xl rounded-tr-none'
-                : 'bg-zinc-50 text-zinc-800 rounded-2xl rounded-tl-none border border-zinc-200'
+                ? 'bg-gray-900 dark:bg-indigo-600 text-white rounded-2xl rounded-tr-none'
+                : 'bg-zinc-50 dark:bg-slate-850 text-zinc-800 dark:text-slate-200 rounded-2xl rounded-tl-none border border-zinc-200 dark:border-slate-750'
             )}
           >
             {/* Renaming project header line */}
             {!isUser && isBuildAction && nodeActions[0]?.name && (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mb-2">
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-2">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Renaming project to {nodeActions[0].name}</span>
               </div>
@@ -299,34 +299,34 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
 
             {/* CrewAI Studio v2 "What was created" Table Card */}
             {!isUser && isBuildAction && nodeActions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-zinc-200/80 space-y-3">
+              <div className="mt-3 pt-3 border-t border-zinc-200/80 dark:border-slate-750/80 space-y-3">
                 <div>
-                  <p className="text-xs font-bold text-gray-900 mb-1">
-                    Here's your <strong className="text-indigo-600">{nodeActions[0]?.name || 'Agent'}</strong> automation, fully built! 🎉
+                  <p className="text-xs font-bold text-gray-900 dark:text-slate-100 mb-1">
+                    Here's your <strong className="text-indigo-600 dark:text-indigo-400">{nodeActions[0]?.name || 'Agent'}</strong> automation, fully built! 🎉
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-slate-100">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
                     <span>What was created</span>
                   </div>
 
-                  <div className="overflow-hidden border border-zinc-200 rounded-xl bg-white text-xs shadow-2xs">
+                  <div className="overflow-hidden border border-zinc-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 text-xs shadow-2xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-zinc-200 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+                        <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-zinc-200 dark:border-slate-700 text-[10px] uppercase font-bold text-gray-500 dark:text-slate-400 tracking-wider">
                           <th className="px-3 py-2 w-1/3">Component</th>
                           <th className="px-3 py-2 w-2/3">Role</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-100 text-[11px] text-gray-700">
+                      <tbody className="divide-y divide-zinc-100 dark:divide-slate-800 text-[11px] text-gray-700 dark:text-slate-300">
                         {nodeActions.map((act, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="px-3 py-2 font-bold text-gray-900 font-sans">
+                          <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                            <td className="px-3 py-2 font-bold text-gray-900 dark:text-slate-100 font-sans">
                               {act.name || act.title || `Agent ${idx + 1}`}
                             </td>
-                            <td className="px-3 py-2 text-gray-600 leading-normal">
+                            <td className="px-3 py-2 text-gray-600 dark:text-slate-400 leading-normal">
                               {act.description || act.role || `Executes workflow tasks.`}
                             </td>
                           </tr>
@@ -342,34 +342,34 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
 
             {/* Interactive Agent Repository Match Card */}
             {!isUser && isCheckingExisting && (
-              <div className="mt-3 p-3 bg-indigo-50/90 border border-indigo-200 rounded-2xl space-y-2.5 shadow-2xs">
+              <div className="mt-3 p-3 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-5 h-5 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
                       <Bot className="w-3 h-3" />
                     </div>
-                    <span className="text-xs font-bold text-indigo-950">Agent Repository Check</span>
+                    <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200">Agent Repository Check</span>
                   </div>
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-full">
                     {matchedExistingAgents.length} Found
                   </span>
                 </div>
 
-                <p className="text-xs text-indigo-900 leading-relaxed">
+                <p className="text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed">
                   We checked your existing agent repository for matching capabilities:
                 </p>
 
                 {matchedExistingAgents.length > 0 ? (
                   <div className="space-y-1.5">
                     {matchedExistingAgents.map((ag) => (
-                      <div key={ag.id || ag.name} className="flex items-center justify-between p-2 bg-white border border-indigo-100 rounded-xl shadow-2xs">
+                      <div key={ag.id || ag.name} className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 rounded-xl shadow-2xs">
                         <div className="min-w-0 pr-2">
-                          <p className="text-xs font-bold text-gray-900 truncate">{ag.name}</p>
-                          <p className="text-[10px] text-gray-500 truncate">{ag.description || ag.role || 'Available in repository'}</p>
+                          <p className="text-xs font-bold text-gray-900 dark:text-slate-100 truncate">{ag.name}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-slate-400 truncate">{ag.description || ag.role || 'Available in repository'}</p>
                         </div>
                         <button
                           onClick={() => handleSelectExisting(ag)}
-                          className="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-200 rounded-lg transition-all shrink-0 cursor-pointer"
+                          className="px-2.5 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-white dark:hover:text-white bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-600 dark:hover:bg-indigo-600 border border-indigo-200 dark:border-indigo-800 rounded-lg transition-all shrink-0 cursor-pointer"
                         >
                           Use Existing
                         </button>
@@ -377,13 +377,13 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
                     ))}
                   </div>
                 ) : (
-                  <div className="p-2 bg-white border border-indigo-100 rounded-xl text-xs text-gray-500">
+                  <div className="p-2 bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/50 rounded-xl text-xs text-gray-500 dark:text-slate-400">
                     No matching agents found in repository.
                   </div>
                 )}
 
-                <div className="pt-2 border-t border-indigo-200/60 flex items-center justify-between">
-                  <span className="text-[11px] text-indigo-900 font-semibold">Or build a custom workflow:</span>
+                <div className="pt-2 border-t border-indigo-200/60 dark:border-indigo-800/50 flex items-center justify-between">
+                  <span className="text-[11px] text-indigo-900 dark:text-indigo-200 font-semibold">Or build a custom workflow:</span>
                   <button
                     onClick={handleCreateNewAgent}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
@@ -406,13 +406,13 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
               className={cn(
                 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs select-none',
                 isApplied
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 hover:shadow-md cursor-pointer active:scale-95'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 cursor-default'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100 dark:shadow-none hover:shadow-md cursor-pointer active:scale-95'
               )}
             >
               {isApplied ? (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Applied to Canvas</span>
                 </>
               ) : (
@@ -429,32 +429,32 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
         {!isUser && totalTokens !== null && !isStreaming && (
           <div className="flex items-center gap-1.5 mt-1 px-1 select-none">
             <Zap className="w-3 h-3 text-amber-500" />
-            <span className="text-[10px] text-amber-600 font-mono">
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono">
               {totalTokens.toLocaleString()} tokens
             </span>
             {usage?.duration && (
-              <span className="text-[10px] text-gray-500 font-mono ml-0.5">
+              <span className="text-[10px] text-gray-500 dark:text-slate-400 font-mono ml-0.5">
                 {usage.duration}
               </span>
             )}
             {usage && (
               <span className="text-[10px] font-mono ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex items-center gap-1 select-none">
-                <span className="text-indigo-500">Input: {(usage.promptTokens ?? 0).toLocaleString()}</span>
-                <span className="text-gray-400">/</span>
-                <span className="text-emerald-500">Output: {(usage.completionTokens ?? 0).toLocaleString()}</span>
+                <span className="text-indigo-500 dark:text-indigo-400">Input: {(usage.promptTokens ?? 0).toLocaleString()}</span>
+                <span className="text-gray-400 dark:text-slate-500">/</span>
+                <span className="text-emerald-500 dark:text-emerald-400">Output: {(usage.completionTokens ?? 0).toLocaleString()}</span>
               </span>
             )}
           </div>
         )}
 
         {isUser && formattedTime && (
-          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-right">
+          <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5 px-1 text-right">
             {formattedTime}
           </span>
         )}
 
         {!isUser && totalTokens === null && formattedTime && (
-          <span className="text-[10px] text-gray-400 mt-0.5 px-1 text-left">
+          <span className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5 px-1 text-left">
             {formattedTime}
           </span>
         )}

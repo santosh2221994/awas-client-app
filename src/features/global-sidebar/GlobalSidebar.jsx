@@ -1,5 +1,5 @@
 import React from 'react';
-import { PanelLeftClose, PanelLeftOpen, BookOpen, LogOut } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, BookOpen, LogOut, Sun, Moon, Laptop } from 'lucide-react';
 import { useUIStore } from '../../stores/useUIStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { NAV_GROUPS } from '../../utils/constants';
@@ -9,13 +9,13 @@ import NavItem from './NavItem';
 import { cn } from '../../utils/cn';
 
 export default function GlobalSidebar() {
-  const { isSidebarCollapsed, toggleSidebar, activeNavItem, setActiveNavItem } = useUIStore();
+  const { isSidebarCollapsed, toggleSidebar, activeNavItem, setActiveNavItem, theme, toggleTheme, isDarkMode } = useUIStore();
   const { organization, user, logout } = useSessionStore();
 
   return (
     <div
       className={cn(
-        "h-full flex flex-col bg-white border-r border-gray-200 transition-all duration-300 select-none z-30",
+        "h-full flex flex-col bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 transition-all duration-300 select-none z-30",
         isSidebarCollapsed ? "w-16" : "w-60"
       )}
     >
@@ -24,7 +24,7 @@ export default function GlobalSidebar() {
         <OrgSelector organization={organization} user={user} isCollapsed={isSidebarCollapsed} />
       </div>
 
-      <div className="border-b border-gray-100 mx-3 my-1" />
+      <div className="border-b border-gray-100 dark:border-slate-800 mx-3 my-1" />
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto scrollbar-thin px-2 py-3 space-y-1">
@@ -40,10 +40,40 @@ export default function GlobalSidebar() {
         ))}
       </div>
 
-      <div className="border-b border-gray-100 mx-3 my-1" />
+      <div className="border-b border-gray-100 dark:border-slate-800 mx-3 my-1" />
 
       {/* Bottom Actions */}
       <div className="p-2 space-y-1">
+        {/* Quick Theme Switcher */}
+        <button
+          onClick={toggleTheme}
+          title={`Active theme: ${theme}. Click to switch theme.`}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800/80 transition-all duration-150 outline-none group",
+            isSidebarCollapsed ? "justify-center" : "justify-between"
+          )}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {theme === 'Dark' ? (
+              <Moon className="w-4 h-4 flex-shrink-0 text-indigo-500 dark:text-indigo-400" />
+            ) : theme === 'Light' ? (
+              <Sun className="w-4 h-4 flex-shrink-0 text-amber-500" />
+            ) : (
+              <Laptop className="w-4 h-4 flex-shrink-0 text-blue-500" />
+            )}
+            {!isSidebarCollapsed && (
+              <span className="truncate text-xs font-medium text-gray-600 dark:text-slate-300">
+                Theme: {theme}
+              </span>
+            )}
+          </div>
+          {!isSidebarCollapsed && (
+            <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400">
+              {isDarkMode ? 'Dark' : 'Light'}
+            </span>
+          )}
+        </button>
+
         {/* Resources collapsed/expanded */}
         <NavItem
           id="resources"
@@ -58,7 +88,7 @@ export default function GlobalSidebar() {
         <button
           onClick={logout}
           className={cn(
-            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150 outline-none",
+            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all duration-150 outline-none",
             isSidebarCollapsed ? "justify-center" : "justify-start"
           )}
         >
@@ -70,7 +100,7 @@ export default function GlobalSidebar() {
         <button
           onClick={toggleSidebar}
           className={cn(
-            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-150 outline-none",
+            "flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all duration-150 outline-none",
             isSidebarCollapsed ? "justify-center" : "justify-start"
           )}
         >

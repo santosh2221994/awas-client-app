@@ -20,6 +20,7 @@ import WorkflowRunnerPanel from './WorkflowRunnerPanel';
 
 function FlowCanvasInner({ nodes, edges, handleNodesChange, handleEdgesChange, onConnect }) {
   const { fitView } = useReactFlow();
+  const { isDarkMode: isDark } = useUIStore();
   const prevNodeCount = useRef(nodes.length);
 
   useEffect(() => {
@@ -41,28 +42,28 @@ function FlowCanvasInner({ nodes, edges, handleNodesChange, handleEdgesChange, o
       fitViewOptions={{ padding: 0.25 }}
       defaultEdgeOptions={{
         type: 'smoothstep',
-        style: { stroke: '#d1d5db', strokeWidth: 1.5 }
+        style: { stroke: isDark ? '#475569' : '#d1d5db', strokeWidth: 1.5 }
       }}
       connectionLineStyle={{ stroke: '#6366f1', strokeWidth: 1.8 }}
       proOptions={{ hideAttribution: true }}
       minZoom={0.2}
       maxZoom={1.5}
     >
-      <Background variant="dots" gap={18} size={1} color="#e2e8f0" />
+      <Background variant="dots" gap={18} size={1} color={isDark ? '#334155' : '#e2e8f0'} />
       <Controls
         showInteractive={false}
-        className="!bg-white !border-gray-200 !shadow-sm !rounded-lg overflow-hidden border"
+        className="!bg-white dark:!bg-slate-850 !border-gray-200 dark:!border-slate-750 !shadow-sm !rounded-lg overflow-hidden border dark:!text-slate-200"
       />
       <MiniMap
         nodeStrokeWidth={3}
         nodeColor={(node) => {
-          if (node.type === 'agentNode') return '#dbeafe';
-          if (node.type === 'taskNode') return '#f3e8ff';
-          if (node.type === 'processNode') return '#e2e8f0';
-          return '#f1f5f9';
+          if (node.type === 'agentNode') return isDark ? '#1e3a8a' : '#dbeafe';
+          if (node.type === 'taskNode') return isDark ? '#581c87' : '#f3e8ff';
+          if (node.type === 'processNode') return isDark ? '#334155' : '#e2e8f0';
+          return isDark ? '#1e293b' : '#f1f5f9';
         }}
-        maskColor="rgba(255, 255, 255, 0.75)"
-        className="!rounded-xl !border !border-gray-200 !shadow-sm overflow-hidden"
+        maskColor={isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(255, 255, 255, 0.75)'}
+        className="!rounded-xl !border !border-gray-200 dark:!border-slate-800 !shadow-sm overflow-hidden"
       />
     </ReactFlow>
   );
@@ -252,7 +253,7 @@ export default function FlowCanvas() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50/50">
+    <div className="flex-1 flex flex-col h-full bg-gray-50/50 dark:bg-slate-950">
       {/* Top Header & Interactive Toolbar Section */}
       <CanvasHeader />
       <CanvasToolbar />

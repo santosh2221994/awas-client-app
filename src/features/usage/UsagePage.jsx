@@ -55,21 +55,21 @@ export default function UsagePage() {
   const summary = USAGE_SUMMARY[period];
 
   return (
-    <div className="flex-1 bg-slate-50/50 overflow-y-auto select-none selection:bg-indigo-100">
+    <div className="flex-1 bg-slate-50/50 dark:bg-slate-950 overflow-y-auto select-none selection:bg-indigo-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200/80 px-8 py-6">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-8 py-6">
         <div className="max-w-6xl mx-auto flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">Usage</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Monitor automation runs, token consumption, and agent performance</p>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Usage</h1>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">Monitor automation runs, token consumption, and agent performance</p>
           </div>
           {/* Period Selector */}
-          <div className="flex bg-gray-200/65 p-0.5 rounded-lg border border-gray-200 self-start">
+          <div className="flex bg-gray-200/65 dark:bg-slate-800 p-0.5 rounded-lg border border-gray-200 dark:border-slate-700 self-start">
             {PERIODS.map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all ${period === p ? 'bg-white text-gray-800 shadow-xs' : 'text-gray-500 hover:text-gray-800'
+                className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all ${period === p ? 'bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100 shadow-xs' : 'text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
                   }`}
               >
                 {p}
@@ -83,23 +83,23 @@ export default function UsagePage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Runs', value: summary.runs.toLocaleString(), icon: <Zap className="w-4 h-4" />, trend: +12, iconBg: 'bg-indigo-50 text-indigo-500' },
-            { label: 'Tokens Used', value: (summary.tokens / 1000).toFixed(0) + 'K', icon: <MessageSquare className="w-4 h-4" />, trend: +8, iconBg: 'bg-purple-50 text-purple-500' },
-            { label: 'Avg Latency', value: summary.avgLatency, icon: <Clock className="w-4 h-4" />, trend: -3, iconBg: 'bg-blue-50 text-blue-500' },
-            { label: 'Est. Cost', value: summary.cost, icon: <BarChart3 className="w-4 h-4" />, trend: +6, iconBg: 'bg-emerald-50 text-emerald-500' },
+            { label: 'Total Runs', value: summary.runs.toLocaleString(), icon: <Zap className="w-4 h-4" />, trend: +12, iconBg: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 dark:text-indigo-400' },
+            { label: 'Tokens Used', value: (summary.tokens / 1000).toFixed(0) + 'K', icon: <MessageSquare className="w-4 h-4" />, trend: +8, iconBg: 'bg-purple-50 dark:bg-purple-950/60 text-purple-500 dark:text-purple-400' },
+            { label: 'Avg Latency', value: summary.avgLatency, icon: <Clock className="w-4 h-4" />, trend: -3, iconBg: 'bg-blue-50 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400' },
+            { label: 'Est. Cost', value: summary.cost, icon: <BarChart3 className="w-4 h-4" />, trend: +6, iconBg: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400' },
           ].map((card) => (
-            <div key={card.label} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+            <div key={card.label} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${card.iconBg}`}>
                   {card.icon}
                 </div>
-                <span className={`flex items-center gap-0.5 text-[11px] font-bold ${card.trend > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                <span className={`flex items-center gap-0.5 text-[11px] font-bold ${card.trend > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                   {card.trend > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                   {Math.abs(card.trend)}%
                 </span>
               </div>
-              <div className="text-xl font-bold text-gray-900">{card.value}</div>
-              <div className="text-[11px] text-gray-500 mt-0.5">{card.label}</div>
+              <div className="text-xl font-bold text-gray-900 dark:text-slate-100">{card.value}</div>
+              <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">{card.label}</div>
             </div>
           ))}
         </div>
@@ -107,61 +107,61 @@ export default function UsagePage() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Runs Chart */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-gray-800">Daily Runs</h3>
-                <p className="text-[11px] text-gray-400 mt-0.5">Automation executions over time</p>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200">Daily Runs</h3>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Automation executions over time</p>
               </div>
             </div>
             <MiniBarChart data={DAILY_DATA_30D} valueKey="runs" color="bg-indigo-500" />
             <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] text-gray-400">{DAILY_DATA_30D[0].day}</span>
-              <span className="text-[10px] text-gray-400">{DAILY_DATA_30D[DAILY_DATA_30D.length - 1].day}</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500">{DAILY_DATA_30D[0].day}</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500">{DAILY_DATA_30D[DAILY_DATA_30D.length - 1].day}</span>
             </div>
           </div>
 
           {/* Token Chart */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-bold text-gray-800">Daily Token Usage</h3>
-                <p className="text-[11px] text-gray-400 mt-0.5">Tokens consumed per day</p>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200">Daily Token Usage</h3>
+                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Tokens consumed per day</p>
               </div>
             </div>
             <MiniBarChart data={DAILY_DATA_30D} valueKey="tokens" color="bg-purple-500" />
             <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] text-gray-400">{DAILY_DATA_30D[0].day}</span>
-              <span className="text-[10px] text-gray-400">{DAILY_DATA_30D[DAILY_DATA_30D.length - 1].day}</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500">{DAILY_DATA_30D[0].day}</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500">{DAILY_DATA_30D[DAILY_DATA_30D.length - 1].day}</span>
             </div>
           </div>
         </div>
 
         {/* Top Agents Table */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-xs overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-800">Top Agents by Usage</h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">Ranked by total automation runs in the selected period</p>
+        <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200">Top Agents by Usage</h3>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Ranked by total automation runs in the selected period</p>
           </div>
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-gray-100 dark:divide-slate-800">
             {TOP_AGENTS_DATA.map((agent, idx) => (
-              <div key={agent.agent} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/30 transition-colors">
-                <span className="text-xs font-bold text-gray-400 w-5 text-center">{idx + 1}</span>
-                <div className="h-8 w-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 text-xs font-bold flex-shrink-0">
+              <div key={agent.agent} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/30 dark:hover:bg-slate-800/40 transition-colors">
+                <span className="text-xs font-bold text-gray-400 dark:text-slate-500 w-5 text-center">{idx + 1}</span>
+                <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center text-indigo-500 dark:text-indigo-400 text-xs font-bold flex-shrink-0">
                   {agent.agent.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-gray-800">{agent.agent}</div>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-slate-200">{agent.agent}</div>
                   <div className="flex items-center gap-3 mt-1.5">
-                    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${agent.pct}%` }} />
                     </div>
-                    <span className="text-[10px] text-gray-400 font-medium w-6 text-right">{agent.pct}%</span>
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500 font-medium w-6 text-right">{agent.pct}%</span>
                   </div>
                 </div>
                 <div className="text-right ml-4">
-                  <div className="text-xs font-bold text-gray-900">{agent.runs.toLocaleString()}</div>
-                  <div className="text-[11px] text-gray-400">{(agent.tokens / 1000).toFixed(0)}K tokens</div>
+                  <div className="text-xs font-bold text-gray-900 dark:text-slate-100">{agent.runs.toLocaleString()}</div>
+                  <div className="text-[11px] text-gray-400 dark:text-slate-500">{(agent.tokens / 1000).toFixed(0)}K tokens</div>
                 </div>
               </div>
             ))}

@@ -9,7 +9,7 @@ export default function NodeHandle({ type, position, id, className, ...rest }) {
       position={position}
       id={id}
       className={cn(
-        "!w-2.5 !h-2.5 !border-2 !border-gray-300 !bg-white hover:!border-indigo-500 hover:!bg-indigo-500 hover:!scale-125 !transition-all !duration-150",
+        "!w-2.5 !h-2.5 !border-2 !border-gray-300 dark:!border-slate-600 !bg-white dark:!bg-slate-800 hover:!border-indigo-500 hover:!bg-indigo-500 hover:!scale-125 !transition-all !duration-150",
         className
       )}
       {...rest}

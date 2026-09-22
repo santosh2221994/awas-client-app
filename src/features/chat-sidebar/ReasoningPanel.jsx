@@ -30,26 +30,26 @@ export default function ReasoningPanel({ isThinking = false, reasoning = '' }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors bg-transparent border-none p-0 outline-none cursor-pointer"
+        className="flex w-full items-center gap-2 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors bg-transparent border-none p-0 outline-none cursor-pointer"
       >
-        <Brain className={cn("w-4 h-4 text-indigo-500", isThinking && "animate-pulse")} />
+        <Brain className={cn("w-4 h-4 text-indigo-500 dark:text-indigo-400", isThinking && "animate-pulse")} />
         <p className="flex-1 text-left m-0 font-medium">
           {isThinking ? 'Thinking...' : 'Thought Process'}
         </p>
         <ChevronDown 
           className={cn(
-            "w-3.5 h-3.5 transition-transform duration-200 text-gray-400", 
+            "w-3.5 h-3.5 transition-transform duration-200 text-gray-400 dark:text-slate-500", 
             open ? "rotate-180" : "rotate-0"
           )} 
         />
       </button>
 
       {open && (
-        <div className="mt-2 text-xs text-gray-600 border-l-2 border-indigo-200 bg-gray-50/70 p-2.5 rounded-r-md ml-2 max-h-[300px] overflow-y-auto whitespace-pre-wrap leading-relaxed animate-in slide-in-from-top-2 fade-in-0 duration-200 font-mono">
+        <div className="mt-2 text-xs text-gray-600 dark:text-slate-300 border-l-2 border-indigo-200 dark:border-indigo-500 bg-gray-50/70 dark:bg-slate-800/60 p-2.5 rounded-r-md ml-2 max-h-[300px] overflow-y-auto whitespace-pre-wrap leading-relaxed animate-in slide-in-from-top-2 fade-in-0 duration-200 font-mono">
           {hasReasoningContent ? (
             reasoning
           ) : isThinking ? (
-            <div className="flex items-center gap-2 text-gray-400 font-sans italic py-0.5">
+            <div className="flex items-center gap-2 text-gray-400 dark:text-slate-500 font-sans italic py-0.5">
               <span>Reasoning in progress</span>
               <ThinkingDots />
             </div>

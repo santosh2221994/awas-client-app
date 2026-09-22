@@ -5,7 +5,7 @@ export default function NavGroup({ title, items, isCollapsed, activeItem, onItem
   return (
     <div className="mb-4">
       {!isCollapsed && (
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 px-3 mb-1">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 px-3 mb-1">
           {title}
         </div>
       )}

@@ -51,25 +51,25 @@ export default function BillingPage() {
   const [activeTab, setActiveTab] = useState('Overview');
 
   return (
-    <div className="flex-1 bg-slate-50/50 overflow-y-auto select-none selection:bg-indigo-100">
+    <div className="flex-1 bg-slate-50/50 dark:bg-slate-950 overflow-y-auto select-none selection:bg-indigo-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200/80 px-8 py-6">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-8 py-6">
         <div className="max-w-6xl mx-auto space-y-1">
-          <h1 className="text-xl font-bold text-gray-900 tracking-tight">Billing</h1>
-          <p className="text-xs text-gray-500">Manage your subscription, payment method, and view invoices</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Billing</h1>
+          <p className="text-xs text-gray-500 dark:text-slate-400">Manage your subscription, payment method, and view invoices</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200/80 px-8">
+      <div className="bg-white dark:bg-slate-900 border-b border-gray-200/80 dark:border-slate-800 px-8">
         <div className="max-w-6xl mx-auto flex gap-6">
           {['Overview', 'Plans', 'Invoices'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-0 py-3.5 text-xs font-semibold border-b-2 transition ${activeTab === tab
-                  ? 'text-indigo-600 border-indigo-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-900'
+                  ? 'text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400'
+                  : 'text-gray-500 dark:text-slate-400 border-transparent hover:text-gray-900 dark:hover:text-slate-200'
                 }`}
             >
               {tab}
@@ -82,22 +82,22 @@ export default function BillingPage() {
         {activeTab === 'Overview' && (
           <>
             {/* Current Plan Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500">
+                  <div className="h-12 w-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800/40 flex items-center justify-center text-indigo-500 dark:text-indigo-400">
                     <Shield className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base font-bold text-gray-900">Pro Plan</h2>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">CURRENT</span>
+                      <h2 className="text-base font-bold text-gray-900 dark:text-slate-100">Pro Plan</h2>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/40">CURRENT</span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">$49/mo · Renews January 1, 2025</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">$49/mo · Renews January 1, 2025</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" className="font-semibold border-gray-250 text-gray-700">
+                  <Button variant="secondary" size="sm" className="font-semibold border-gray-250 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-750">
                     Manage Subscription
                   </Button>
                   <Button variant="brand" size="sm" className="font-semibold">
@@ -108,20 +108,20 @@ export default function BillingPage() {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-800">Payment Method</h3>
-                <button className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 transition">Update</button>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200">Payment Method</h3>
+                <button className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">Update</button>
               </div>
               <div className="flex items-center gap-4">
                 <div className="h-10 w-16 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-gray-800">Visa ending in 4242</div>
-                  <div className="text-xs text-gray-400 mt-0.5">Expires 08/27</div>
+                  <div className="text-sm font-semibold text-gray-800 dark:text-slate-200">Visa ending in 4242</div>
+                  <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Expires 08/27</div>
                 </div>
-                <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-emerald-600">
+                <span className="ml-auto flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Active
                 </span>
@@ -129,10 +129,10 @@ export default function BillingPage() {
             </div>
 
             {/* Usage Meters */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
+            <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-sm font-bold text-gray-800">Current Period Usage</h3>
-                <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                <h3 className="text-sm font-bold text-gray-800 dark:text-slate-200">Current Period Usage</h3>
+                <span className="text-[11px] text-gray-400 dark:text-slate-500 flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
                   Resets Jan 1, 2025
                 </span>
@@ -141,12 +141,12 @@ export default function BillingPage() {
                 {USAGE_BARS.map((u) => (
                   <div key={u.label}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-semibold text-gray-700">{u.label}</span>
-                      <span className="text-[11px] text-gray-500">
+                      <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">{u.label}</span>
+                      <span className="text-[11px] text-gray-500 dark:text-slate-400">
                         {u.used} / {u.limit}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${u.pct >= 90 ? 'bg-red-500' : u.pct >= 70 ? 'bg-amber-500' : 'bg-indigo-500'}`}
                         style={{ width: `${u.pct}%` }}
@@ -160,17 +160,17 @@ export default function BillingPage() {
             {/* Spend Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: 'Current Month', value: '$18.40', sub: 'Dec 1–17, 2024', icon: <Zap className="w-4 h-4" />, iconBg: 'bg-indigo-50 text-indigo-500' },
-                { label: 'Last Month', value: '$42.80', sub: 'November 2024', icon: <Calendar className="w-4 h-4" />, iconBg: 'bg-gray-50 text-gray-500' },
-                { label: 'YTD Spend', value: '$341.20', sub: 'Jan – Nov 2024', icon: <TrendingUp className="w-4 h-4" />, iconBg: 'bg-emerald-50 text-emerald-500' },
+                { label: 'Current Month', value: '$18.40', sub: 'Dec 1–17, 2024', icon: <Zap className="w-4 h-4" />, iconBg: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 dark:text-indigo-400' },
+                { label: 'Last Month', value: '$42.80', sub: 'November 2024', icon: <Calendar className="w-4 h-4" />, iconBg: 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400' },
+                { label: 'YTD Spend', value: '$341.20', sub: 'Jan – Nov 2024', icon: <TrendingUp className="w-4 h-4" />, iconBg: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-500 dark:text-emerald-400' },
               ].map((card) => (
-                <div key={card.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-xs">
+                <div key={card.label} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs">
                   <div className={`h-8 w-8 rounded-lg flex items-center justify-center mb-3 ${card.iconBg}`}>
                     {card.icon}
                   </div>
-                  <div className="text-xl font-bold text-gray-900">{card.value}</div>
-                  <div className="text-xs font-semibold text-gray-700 mt-0.5">{card.label}</div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">{card.sub}</div>
+                  <div className="text-xl font-bold text-gray-900 dark:text-slate-100">{card.value}</div>
+                  <div className="text-xs font-semibold text-gray-700 dark:text-slate-300 mt-0.5">{card.label}</div>
+                  <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{card.sub}</div>
                 </div>
               ))}
             </div>
@@ -183,25 +183,25 @@ export default function BillingPage() {
               <div
                 key={plan.id}
                 className={`rounded-2xl p-6 border shadow-xs flex flex-col ${plan.current
-                    ? 'border-indigo-300 bg-indigo-50/30 ring-1 ring-indigo-300'
-                    : 'border-gray-200 bg-white'
+                    ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-950/20 ring-1 ring-indigo-300 dark:ring-indigo-700'
+                    : 'border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900'
                   }`}
               >
                 {plan.current && (
-                  <span className="self-start text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 mb-3">
+                  <span className="self-start text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 mb-3">
                     CURRENT PLAN
                   </span>
                 )}
-                <h3 className="text-base font-bold text-gray-900">{plan.name}</h3>
+                <h3 className="text-base font-bold text-gray-900 dark:text-slate-100">{plan.name}</h3>
                 <div className="mt-2 mb-1">
-                  <span className="text-3xl font-extrabold text-gray-900">{plan.price}</span>
-                  <span className="text-sm text-gray-400">{plan.period}</span>
+                  <span className="text-3xl font-extrabold text-gray-900 dark:text-slate-100">{plan.price}</span>
+                  <span className="text-sm text-gray-400 dark:text-slate-500">{plan.period}</span>
                 </div>
-                <p className="text-[11px] text-gray-500 mb-5">{plan.description}</p>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-5">{plan.description}</p>
                 <ul className="space-y-2.5 mb-6 flex-1">
                   {plan.features.map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-gray-700">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                    <li key={f} className="flex items-center gap-2 text-xs text-gray-700 dark:text-slate-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -220,10 +220,10 @@ export default function BillingPage() {
         )}
 
         {activeTab === 'Invoices' && (
-          <div className="overflow-hidden border border-gray-200 bg-white rounded-2xl shadow-xs">
+          <div className="overflow-hidden border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-2xl shadow-xs">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-150 bg-slate-50/50 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                <tr className="border-b border-gray-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 text-[10px] uppercase font-bold text-gray-400 dark:text-slate-400 tracking-wider">
                   <th className="px-6 py-3.5">Invoice</th>
                   <th className="px-6 py-3.5">Period</th>
                   <th className="px-6 py-3.5">Amount</th>
@@ -232,21 +232,21 @@ export default function BillingPage() {
                   <th className="px-6 py-3.5 text-center">Download</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-xs text-gray-700 dark:text-slate-300">
                 {INVOICES.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-slate-50/30 transition-colors">
-                    <td className="px-6 py-4 font-mono text-gray-700">{inv.id}</td>
-                    <td className="px-6 py-4 font-medium text-gray-800">{inv.period}</td>
-                    <td className="px-6 py-4 font-bold text-gray-900">{inv.amount}</td>
+                  <tr key={inv.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-6 py-4 font-mono text-gray-700 dark:text-slate-300">{inv.id}</td>
+                    <td className="px-6 py-4 font-medium text-gray-800 dark:text-slate-200">{inv.period}</td>
+                    <td className="px-6 py-4 font-bold text-gray-900 dark:text-slate-100">{inv.amount}</td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/40">
                         <CheckCircle2 className="w-3 h-3" />
                         {inv.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{inv.date}</td>
+                    <td className="px-6 py-4 text-gray-500 dark:text-slate-400">{inv.date}</td>
                     <td className="px-6 py-4 text-center">
-                      <button className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 transition">
+                      <button className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition">
                         <Download className="w-3 h-3" />
                         PDF
                       </button>

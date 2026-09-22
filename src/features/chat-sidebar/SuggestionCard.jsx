@@ -8,14 +8,14 @@ export default function SuggestionCard({ suggestion, onPrimaryAction, onDismiss 
   const { id, title, description, primaryAction, secondaryAction } = suggestion;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm animate-scale-in">
+    <div className="bg-white dark:bg-slate-850 border border-gray-200 dark:border-slate-750 rounded-xl p-4 shadow-sm animate-scale-in">
       <div className="flex items-center justify-between">
         <Badge variant="info" size="sm">
           {title || 'Suggestion'}
         </Badge>
       </div>
 
-      <p className="text-sm text-gray-600 mt-2.5 leading-relaxed">
+      <p className="text-sm text-gray-600 dark:text-slate-300 mt-2.5 leading-relaxed">
         {description || 'Your automation is configured and ready. Click below to start processing the scene files.'}
       </p>
 

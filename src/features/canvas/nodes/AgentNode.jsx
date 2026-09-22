@@ -63,7 +63,7 @@ export default function AgentNode({ id, data }) {
   };
 
   return (
-    <div className="node-card border-l-4 border-l-blue-500 min-w-[260px] max-w-[300px] p-0 bg-white rounded-xl shadow-node border border-gray-200 hover:shadow-node-hover transition-shadow duration-200 select-none group/node">
+    <div className="node-card border-l-4 border-l-blue-500 min-w-[260px] max-w-[300px] p-0 bg-white dark:bg-slate-900 rounded-xl shadow-node border border-gray-200 dark:border-slate-800 hover:shadow-node-hover transition-shadow duration-200 select-none group/node">
       {/* Node Handles */}
       <NodeHandle type="target" position={Position.Left} id="target-agent" />
       <NodeHandle type="source" position={Position.Right} id="source-agent" />
@@ -71,9 +71,9 @@ export default function AgentNode({ id, data }) {
       <NodeHandle type="source" position={Position.Bottom} id="source-agent-bottom" />
 
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-gray-50/50 rounded-tr-xl">
+      <div className="flex items-center justify-between p-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-850/50 rounded-tr-xl">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-500 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
             <User className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -99,23 +99,23 @@ export default function AgentNode({ id, data }) {
                   updateNodeData(id, { title: e.target.value, name: e.target.value });
                 }
               }}
-              className="text-xs font-bold text-gray-900 bg-transparent border-b border-dashed border-gray-250 focus:border-indigo-500 outline-none pr-2 cursor-pointer w-full font-sans truncate"
+              className="text-xs font-bold text-gray-900 dark:text-slate-100 bg-transparent border-b border-dashed border-gray-250 dark:border-slate-700 focus:border-indigo-500 outline-none pr-2 cursor-pointer w-full font-sans truncate"
             >
               {displayTitle && !agentsList.some((a) => a.name === displayTitle) && (
-                <option value={displayTitle}>{displayTitle}</option>
+                <option value={displayTitle} className="dark:bg-slate-900 dark:text-slate-100">{displayTitle}</option>
               )}
-              <option value="" disabled>Select Repository Agent...</option>
+              <option value="" disabled className="dark:bg-slate-900 dark:text-slate-400">Select Repository Agent...</option>
               {agentsList.map((a) => (
-                <option key={a.id} value={a.name}>
+                <option key={a.id} value={a.name} className="dark:bg-slate-900 dark:text-slate-100">
                   {a.name} ({a.model || 'Default'})
                 </option>
               ))}
             </select>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] text-gray-400 block truncate">
+              <span className="text-[10px] text-gray-400 dark:text-slate-500 block truncate">
                 {role || 'Agent'}
               </span>
-              <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100/60">
+              <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.2 rounded border border-indigo-100/60 dark:border-indigo-800/60">
                 Auth Repo
               </span>
             </div>
@@ -128,7 +128,7 @@ export default function AgentNode({ id, data }) {
             e.stopPropagation();
             removeNode(id);
           }}
-          className="opacity-0 group-hover/node:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-gray-100 transition-all duration-150 outline-none"
+          className="opacity-0 group-hover/node:opacity-100 text-gray-400 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-150 outline-none"
           title="Delete Agent"
         >
           <Trash2 className="w-3.5 h-3.5" />
@@ -137,21 +137,21 @@ export default function AgentNode({ id, data }) {
 
       {/* Body */}
       <div className="p-3">
-        <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">
+        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-3">
           {description}
         </p>
 
         {/* Model Badge */}
         <div className="mt-2.5">
-          <Badge variant="default" size="sm" className="bg-gray-50 text-gray-600 border border-gray-200">
-            <Cpu className="w-3 h-3 text-gray-400" />
+          <Badge variant="default" size="sm" className="bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-300 border border-gray-200 dark:border-slate-700">
+            <Cpu className="w-3 h-3 text-gray-400 dark:text-slate-500" />
             <span>{model || 'gpt-4o-mini'}</span>
           </Badge>
         </div>
 
         {/* Tools Section */}
-        <div className="mt-3.5 border-t border-gray-100 pt-3">
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 block mb-2">
+        <div className="mt-3.5 border-t border-gray-100 dark:border-slate-800 pt-3">
+          <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500 block mb-2">
             Tools & Capabilities
           </span>
           <div className="space-y-1.5">
@@ -159,7 +159,7 @@ export default function AgentNode({ id, data }) {
               tools.map((tool, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-gray-50 text-[11px] text-gray-600 border border-gray-100 hover:bg-gray-100/50 transition-colors"
+                  className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-gray-50 dark:bg-slate-800/70 text-[11px] text-gray-600 dark:text-slate-300 border border-gray-100 dark:border-slate-750 hover:bg-gray-100/50 dark:hover:bg-slate-800 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {getToolIcon(tool.icon)}
@@ -173,7 +173,7 @@ export default function AgentNode({ id, data }) {
                         className={`w-1.5 h-1.5 rounded-full ${tool.connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
                           }`}
                       />
-                      <span className="text-[9px] text-gray-400">
+                      <span className="text-[9px] text-gray-400 dark:text-slate-500">
                         {tool.connected ? 'Active' : 'Unconnected'}
                       </span>
                     </div>
@@ -181,7 +181,7 @@ export default function AgentNode({ id, data }) {
                 </div>
               ))
             ) : (
-              <div className="text-[11px] text-gray-400 italic text-center py-1 bg-gray-50/50 border border-dashed border-gray-200 rounded-lg">
+              <div className="text-[11px] text-gray-400 dark:text-slate-500 italic text-center py-1 bg-gray-50/50 dark:bg-slate-800/40 border border-dashed border-gray-200 dark:border-slate-700 rounded-lg">
                 No tools attached
               </div>
             )}
