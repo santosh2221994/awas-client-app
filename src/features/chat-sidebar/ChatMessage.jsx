@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Bot, User, CheckCircle2, AlertCircle, ChevronDown, ChevronRight, Plus, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useUIStore } from '../../stores/useUIStore';
+import { listAgents } from '../../api/services/agentService';
 
 function ReasoningPanel({ isThinking, reasoning }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -169,30 +170,129 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
     if (nodeActions?.some(a => a.action === 'checkExistingAgents')) return true;
     const lower = (content || '').toLowerCase();
     return (
+      lower.includes('models & tools') ||
+      lower.includes('which llm model') ||
+      lower.includes('question 2') ||
       lower.includes('list_repository_agents') ||
       lower.includes('agent repository') ||
       lower.includes('checkexistingagents') ||
+      lower.includes('existing agents') ||
       (lower.includes('found') && lower.includes('agent') && lower.includes('repositor'))
     );
   }, [isUser, nodeActions, content]);
 
-  const matchedExistingAgents = useMemo(() => {
-    if (!isCheckingExisting) return [];
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
-      const customList = stored ? JSON.parse(stored) : [];
-      const combined = [...customList];
-      const seen = new Set();
-      return combined.filter(a => {
-        const name = a.name || 'Agent';
-        if (seen.has(name)) return false;
-        seen.add(name);
-        return true;
-      });
-    } catch {
-      return [];
+  const [matchedExistingAgents, setMatchedExistingAgents] = useState([]);
+
+  useEffect(() => {
+    if (!isCheckingExisting) {
+      setMatchedExistingAgents([]);
+      return;
     }
-  }, [isCheckingExisting]);
+
+    // Extract topic terms from user messages in active session
+    let userText = '';
+    try {
+      const { useChatStore } = require('../../stores/useChatStore');
+      const chatState = useChatStore.getState();
+      const activeSession = chatState.sessions?.find(s => s.id === chatState.activeSessionId);
+      if (activeSession?.messages) {
+        userText = activeSession.messages
+          .filter(m => m.role === 'user')
+          .map(m => m.content)
+          .join(' ')
+          .toLowerCase();
+      }
+    } catch {}
+
+    if (!userText) userText = (content || '').toLowerCase();
+
+    const stopWords = new Set([
+      'this', 'that', 'with', 'from', 'have', 'what', 'which', 'should',
+      'would', 'could', 'your', 'about', 'agent', 'agents', 'workflow',
+      'model', 'models', 'using', 'used', 'please', 'build', 'create',
+      'question', 'default', 'none', 'sync', 'async', 'parallel', 'sequential',
+      'assign', 'assigned', 'assigning', 'assignment', 'select', 'selected', 'selecting',
+      'option', 'options', 'choice', 'choices', 'recommend', 'recommended', 'recommendation',
+      'following', 'needed', 'need', 'needs', 'require', 'requires', 'required',
+      'detail', 'details', 'detailed', 'info', 'information', 'description', 'system',
+      'prompt', 'prompts', 'instruction', 'instructions', 'component', 'components',
+      'execution', 'execute', 'executing', 'mode', 'pattern', 'step', 'steps',
+      'next', 'answer', 'response', 'responses', 'result', 'results', 'check',
+      'checking', 'found', 'find', 'match', 'matched', 'matching', 'repository',
+      'repo', 'custom', 'local', 'storage', 'store', 'stored', 'type', 'types',
+      'role', 'roles', 'node', 'nodes', 'crew', 'studio',
+      'builder', 'copilot', 'assistant', 'architect', 'designer', 'design',
+      'designing', 'process', 'processes', 'processing', 'first', 'second', 'third',
+      'question1', 'question2', 'question3', 'question4', 'turn', 'turns', 'stage',
+      'hello', 'listen', 'want', 'make', 'help', 'give', 'show', 'display', 'here',
+      'code', 'file', 'files', 'integration', 'integrations',
+      'gpt', 'llm', 'user', 'users', 'tool', 'tools'
+    ]);
+
+    const topicTerms = userText
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length >= 4 && !stopWords.has(w));
+
+    if (topicTerms.length === 0) {
+      setMatchedExistingAgents([]);
+      return;
+    }
+
+    // Fetch ALL agents from the real Agent Repository (backend + local)
+    listAgents().then(allAgents => {
+      const seen = new Set();
+
+      // Separate terms by specificity: long/unique terms are high-confidence, short terms need multiple hits
+      const highConfidenceTerms = topicTerms.filter(w => w.length >= 7); // e.g. "scriptwriting", "storyboard", "sentiment"
+      const lowConfidenceTerms  = topicTerms.filter(w => w.length < 7);  // e.g. "film", "news", "data"
+
+      const scored = allAgents
+        .filter(a => {
+          if (!a || !a.name) return false;
+          const name = (a.name || '').toLowerCase();
+          if (seen.has(name)) return false;
+          if (
+            name.includes('agent builder') ||
+            name.includes('co-pilot') ||
+            name.includes('studio chat') ||
+            name.includes('workflow architect')
+          ) return false;
+          return true;
+        })
+        .map(a => {
+          const name = (a.name || '').toLowerCase();
+          const desc = (a.description || a.role || '').toLowerCase();
+          const type = (a.type || '').toLowerCase();
+          const fullAgentStr = `${name} ${desc} ${type}`;
+
+          // Count how many high-confidence terms match (each worth 2 points)
+          const highHits = highConfidenceTerms.filter(term => {
+            const regex = new RegExp(`\\b${term}\\b`, 'i');
+            return regex.test(fullAgentStr);
+          });
+
+          // Count how many low-confidence terms match (each worth 1 point)
+          const lowHits = lowConfidenceTerms.filter(term => {
+            const regex = new RegExp(`\\b${term}\\b`, 'i');
+            return regex.test(fullAgentStr);
+          });
+
+          const score = highHits.length * 2 + lowHits.length;
+          return { agent: a, score, highHits: highHits.length, lowHits: lowHits.length };
+        })
+        // Require: at least 1 high-confidence hit OR at least 2 low-confidence hits
+        .filter(({ highHits, lowHits }) => highHits >= 1 || lowHits >= 2)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5) // Show max 5 most relevant
+        .map(({ agent }) => {
+          seen.add((agent.name || '').toLowerCase());
+          return agent;
+        });
+
+      setMatchedExistingAgents(scored);
+    }).catch(() => setMatchedExistingAgents([]));
+  }, [isCheckingExisting, content]);
 
   const handleSelectExisting = (ag) => {
     useCanvasStore.getState().applyNodeActions([{ action: 'openWorkflow', agent: ag.name }]);
@@ -359,7 +459,7 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
               </div>
             )}
 
-            {/* Interactive Agent Repository Match Card */}
+            {/* Interactive Agent Repository Match Card (Filtered for Related Agents Only) */}
             {!isUser && isCheckingExisting && (
               <div className="mt-3 p-3 bg-indigo-50/90 border border-indigo-200 rounded-2xl space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between">
@@ -370,7 +470,7 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
                     <span className="text-xs font-bold text-indigo-950">Agent Repository Check</span>
                   </div>
                   <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
-                    {matchedExistingAgents.length} Found
+                    {matchedExistingAgents.length} Matched
                   </span>
                 </div>
 
@@ -387,8 +487,8 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
                           <p className="text-[10px] text-gray-500 truncate">{ag.description || ag.role || 'Available in repository'}</p>
                         </div>
                         <button
-                          onClick={() => handleSelectExisting(ag)}
-                          className="px-2.5 py-1 text-xs font-bold text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 border border-indigo-200 rounded-lg transition-all shrink-0 cursor-pointer"
+                          disabled={true}
+                          className="px-2.5 py-1 text-xs font-bold text-gray-400 bg-gray-100 border border-gray-200 rounded-lg shrink-0 cursor-not-allowed opacity-60"
                         >
                           Use Existing
                         </button>
@@ -396,8 +496,8 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
                     ))}
                   </div>
                 ) : (
-                  <div className="p-2 bg-white border border-indigo-100 rounded-xl text-xs text-gray-500">
-                    No matching agents found in repository.
+                  <div className="p-2 bg-white border border-indigo-100 rounded-xl text-xs text-gray-500 font-medium">
+                    No matching existing agents found in repository for this topic.
                   </div>
                 )}
 
