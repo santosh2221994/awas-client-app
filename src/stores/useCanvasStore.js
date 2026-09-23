@@ -70,7 +70,15 @@ export const useCanvasStore = create((set, get) => ({
     try {
       const wf = await getWorkflow(workflowId);
       if (wf) {
-        set({ nodes: wf.nodes || [], edges: wf.edges || [], activeWorkflowId: workflowId });
+        let parsedNodes = wf.nodes || [];
+        let parsedEdges = wf.edges || [];
+        if (typeof parsedNodes === 'string') {
+          try { parsedNodes = JSON.parse(parsedNodes); } catch { parsedNodes = []; }
+        }
+        if (typeof parsedEdges === 'string') {
+          try { parsedEdges = JSON.parse(parsedEdges); } catch { parsedEdges = []; }
+        }
+        set({ nodes: parsedNodes, edges: parsedEdges, activeWorkflowId: workflowId });
         return true;
       }
     } catch {

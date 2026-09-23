@@ -1,42 +1,21 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
-export const useSessionStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      organization: null,
-      token: null,
-      isAuthenticated: false,
+export const useSessionStore = create((set) => ({
+  user: null,
+  organization: null,
+  token: null,
+  isAuthenticated: false,
+  isHydrating: true, // true while we attempt silent refresh on load
 
-      login: (userData, token) =>
-        set({
-          user: userData,
-          token: token,
-          isAuthenticated: true,
-        }),
+  login: (userData, token) =>
+    set({ user: userData, token, isAuthenticated: true, isHydrating: false }),
 
-      logout: () =>
-        set({
-          user: null,
-          organization: null,
-          token: null,
-          isAuthenticated: false,
-        }),
+  logout: () =>
+    set({ user: null, organization: null, token: null, isAuthenticated: false, isHydrating: false }),
 
-      setOrganization: (org) => set({ organization: org }),
+  setOrganization: (org) => set({ organization: org }),
 
-      setToken: (token) => set({ token }),
+  setToken: (token) => set({ token }),
 
-      hydrate: () => {
-        const state = useSessionStore.getState();
-        if (state.token && state.user) {
-          set({ isAuthenticated: true });
-        }
-      },
-    }),
-    {
-      name: 'agi-session',
-    }
-  )
-);
+  setHydrating: (val) => set({ isHydrating: val }),
+}));

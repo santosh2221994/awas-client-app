@@ -340,8 +340,8 @@ export default function ChatMessage({ message, isThinking = false, messageIndex 
               </div>
             )}
 
-            {/* Interactive Agent Repository Match Card */}
-            {!isUser && isCheckingExisting && (
+            {/* Interactive Agent Repository Match Card hidden per user preference */}
+            {false && !isUser && isCheckingExisting && (
               <div className="mt-3 p-3 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-2xl space-y-2.5 shadow-2xs">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

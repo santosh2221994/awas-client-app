@@ -7,6 +7,7 @@ import {
 import { listAgents } from '../../api/services/agentService';
 import { listWorkflows, saveWorkflow, deleteWorkflow } from '../../api/services/workflowService';
 import { useUIStore } from '../../stores/useUIStore';
+import { useSessionStore } from '../../stores/useSessionStore';
 import Button from '../../components/Button';
 import AgentChatPanel from '../chat-sidebar/AgentChatPanel';
 
@@ -22,21 +23,34 @@ export default function CrewStudioDashboard() {
     const [mError, setMError] = useState(null);
 
     const [myListedAgents, setMyListedAgents] = useState(() => {
-        const stored = localStorage.getItem('custom_agents');
-        return stored ? JSON.parse(stored) : [];
+        try {
+            const stored = localStorage.getItem('custom_agents');
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
     });
 
     const [workflows, setWorkflows] = useState([]);
     const [workflowsLoading, setWorkflowsLoading] = useState(true);
+    const [workflowsError, setWorkflowsError] = useState(null);
     const [showWorkflowModal, setShowWorkflowModal] = useState(false);
     const [wfName, setWfName] = useState('');
     const [wfDesc, setWfDesc] = useState('');
 
     // Load workflows from MongoDB on mount
     useEffect(() => {
+        setWorkflowsError(null);
         listWorkflows()
             .then((data) => setWorkflows(Array.isArray(data) ? data : []))
-            .catch(() => setWorkflows([]))
+            .catch((err) => {
+                if (err?.status === 401) {
+                    useSessionStore.getState().logout();
+                } else {
+                    setWorkflowsError('Failed to load workflows. Please try again.');
+                }
+                setWorkflows([]);
+            })
             .finally(() => setWorkflowsLoading(false));
     }, []);
 
@@ -213,7 +227,28 @@ export default function CrewStudioDashboard() {
                     </div>
 
                     {/* Cards / Empty State */}
-                    {workflows.length === 0 ? (
+                    {workflowsError ? (
+                        <div className="flex flex-col items-center justify-center py-10 px-6 border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 rounded-2xl text-center gap-3">
+                            <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{workflowsError}</p>
+                            <button
+                                onClick={() => {
+                                    setWorkflowsLoading(true);
+                                    setWorkflowsError(null);
+                                    listWorkflows()
+                                        .then((data) => setWorkflows(Array.isArray(data) ? data : []))
+                                        .catch((err) => {
+                                            if (err?.status === 401) useSessionStore.getState().logout();
+                                            else setWorkflowsError('Failed to load workflows. Please try again.');
+                                            setWorkflows([]);
+                                        })
+                                        .finally(() => setWorkflowsLoading(false));
+                                }}
+                                className="text-xs font-bold text-red-600 dark:text-red-400 underline"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    ) : workflows.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6 border-2 border-dashed border-gray-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900 text-center gap-5">
                             <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
                                 <GitBranch className="w-7 h-7 text-indigo-500 dark:text-indigo-400" />

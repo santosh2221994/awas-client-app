@@ -60,8 +60,9 @@ export default function AuthPage() {
         try {
             if (isLogin) {
                 const res = await client.post('/auth/login', { email, password });
-                const token = res.access_token || res.accessToken || res.token || 'mock-token';
-                const userData = res.user || { email, name: res.name || 'Demo User' };
+                // refresh_token is set as httpOnly cookie by the server automatically
+                const token = res.access_token || res.accessToken || res.token;
+                const userData = res.user || { email };
                 login(userData, token);
             } else {
                 await client.post('/auth/signup', { email, password, name });
