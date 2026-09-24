@@ -31,8 +31,16 @@ export const ENDPOINTS = {
   LLM_CONNECTION_SYNC_MODELS: '/llm-connection/sync-models',
   LLM_STUDIO_LIVE_MODELS: '/llm-connection/lm-studio/live-models',
 
-  // ── Tools ─────────────────────────────────────────────────────────────────
+  // ── Tools & Integrations ───────────────────────────────────────────────────
   TOOLS: '/tools',
+  AI_TOOLS: '/ai/tools',
+  TOOL_BY_ID: (toolId) => `/ai/tools/${toolId}`,
+  TOOL_EXECUTE: (toolId) => `/ai/tools/${toolId}/execute`,
+  TOOL_CONNECTIONS: '/tools/connections',
+  TOOL_CONNECTION_BY_ID: (toolId) => `/tools/connections/${toolId}`,
+  TOOL_CONNECTION_SAVE: (toolId) => `/tools/connections/${toolId}`,
+  TOOL_CONNECTION_DELETE: (toolId) => `/tools/connections/${toolId}`,
+  TOOL_CONNECTION_TEST: (toolId) => `/tools/connections/${toolId}/test`,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   AUTH_SIGNUP: '/auth/signup',

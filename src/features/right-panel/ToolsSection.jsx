@@ -12,9 +12,22 @@ export default function ToolsSection() {
     listTools()
       .then((data) => {
         if (data && Array.isArray(data) && data.length > 0) {
-          setCategories(data);
+          if (data[0] && Array.isArray(data[0].tools)) {
+            setCategories(data);
+          } else {
+            // Group flat list of tools by category
+            const groups = {};
+            data.forEach((tool) => {
+              const catName = tool.category || 'General';
+              const catId = catName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+              if (!groups[catId]) {
+                groups[catId] = { id: catId, category: catName, tools: [] };
+              }
+              groups[catId].tools.push(tool);
+            });
+            setCategories(Object.values(groups));
+          }
         } else {
-          console.warn('API returned empty categories, importing mocks...');
           import('../../mocks/tools').then((mod) => setCategories(mod.toolCategories));
         }
       })
