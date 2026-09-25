@@ -42,4 +42,9 @@ export const useUIStore = create((set) => ({
   setProjectTitle: (title) => set({ projectTitle: title }),
 
   setRightPanelView: (view) => set({ rightPanelView: view }),
+
+  // Run parameters inputs — populated by RunParametersModal, consumed by WorkflowRunnerPanel
+  runInputs: null,
+  setRunInputs: (inputs) => set({ runInputs: inputs }),
+  clearRunInputs: () => set({ runInputs: null }),
 }));

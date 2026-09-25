@@ -48,7 +48,9 @@ function getLocalAgents() {
     tools: agent.tools || [],
     price: agent.price || 'Free',
     username: agent.username || 'creator',
-    sellOnMarketplace: agent.sellOnMarketplace
+    sellOnMarketplace: agent.sellOnMarketplace,
+    systemPrompt: agent.systemPrompt || agent.instructions || '',
+    instructions: agent.instructions || agent.systemPrompt || ''
   }));
 
   const customIds = new Set(formattedCustom.map(a => a.id));
@@ -134,15 +136,21 @@ Your mission is to conversationally guide users in building, drafting system ins
     });
   }
 
-  if (agentId.startsWith('custom-')) {
-    const custom = localStorage.getItem('custom_agents');
-    const customList = custom ? JSON.parse(custom) : [];
-    const matched = customList.find(a => a.id === agentId);
-    
+  const custom = typeof window !== 'undefined' ? localStorage.getItem('custom_agents') : null;
+  const customList = custom ? JSON.parse(custom) : [];
+  const matched = customList.find(a => 
+    a.id === agentId || 
+    `custom-${a.id}` === agentId || 
+    a.id === `custom-${agentId}` ||
+    (agentId.startsWith('custom-') && a.id.includes(agentId.replace('custom-', ''))) ||
+    a.name === agentId
+  );
+
+  if (agentId.startsWith('custom-') || matched) {
     const name = matched?.name || 'Custom Agent';
     const role = matched?.type || matched?.role || name;
     const desc = matched?.description || 'No description provided.';
-    const systemPromptText = matched?.instructions || 
+    const systemPromptText = matched?.systemPrompt || matched?.instructions || 
       `You are ${name}, an autonomous AI specialist for ${role}.\n\n` +
       `Role & Primary Goal:\n` +
       `${desc}\n\n` +
@@ -152,13 +160,14 @@ Your mission is to conversationally guide users in building, drafting system ins
       `- Return clear, structured, and high quality responses.`;
 
     return Promise.resolve({
-      id: agentId,
+      id: matched?.id || agentId,
       name,
       description: desc,
       model: matched?.model || 'gpt-4o',
       type: role,
       provider: 'openai',
       instructions: systemPromptText,
+      systemPrompt: systemPromptText,
       tools: matched?.tools || [],
       workspaceTools: [],
       browserTools: [],

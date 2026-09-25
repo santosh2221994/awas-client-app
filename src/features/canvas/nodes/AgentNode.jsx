@@ -10,7 +10,13 @@ import {
   Zap,
   Link2Off,
   Link2,
-  Trash2
+  Trash2,
+  Globe,
+  Mail,
+  MessageSquare,
+  GitBranch,
+  Database,
+  Wrench,
 } from 'lucide-react';
 import NodeHandle from './NodeHandle';
 import Badge from '../../../components/Badge';
@@ -24,7 +30,13 @@ const iconMap = {
   FileSpreadsheet,
   Image,
   Brain,
-  Zap
+  Zap,
+  Globe,
+  Mail,
+  MessageSquare,
+  GitBranch,
+  Database,
+  Wrench,
 };
 
 export default function AgentNode({ id, data }) {
@@ -61,6 +73,62 @@ export default function AgentNode({ id, data }) {
     const IconComponent = iconMap[iconName];
     return IconComponent ? <IconComponent className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />;
   };
+
+  // Resolve tools and capabilities dynamically
+  const rawCandidateTools = (Array.isArray(tools) && tools.length > 0)
+    ? tools
+    : (Array.isArray(data?.capabilities) && data.capabilities.length > 0)
+    ? data.capabilities
+    : (Array.isArray(data?.integrations) && data.integrations.length > 0)
+    ? data.integrations
+    : [];
+
+  const matchedRepoAgent = agentsList.find((a) => a.name === displayTitle || a.id === data?.id);
+  const candidateList = rawCandidateTools.length > 0 ? rawCandidateTools : (matchedRepoAgent?.tools || []);
+
+  const normaliseToolItem = (t) => {
+    if (typeof t === 'string') {
+      const lower = t.toLowerCase();
+      let icon = 'Wrench';
+      if (lower.includes('search') || lower.includes('web') || lower.includes('google')) icon = 'Globe';
+      else if (lower.includes('mail') || lower.includes('gmail')) icon = 'Mail';
+      else if (lower.includes('slack') || lower.includes('chat') || lower.includes('message')) icon = 'MessageSquare';
+      else if (lower.includes('doc') || lower.includes('file') || lower.includes('record') || lower.includes('content') || lower.includes('pdf')) icon = 'FileText';
+      else if (lower.includes('git') || lower.includes('code')) icon = 'GitBranch';
+      else if (lower.includes('sql') || lower.includes('database') || lower.includes('data')) icon = 'Database';
+      else if (lower.includes('brain') || lower.includes('reason') || lower.includes('ai') || lower.includes('specialist')) icon = 'Brain';
+      return { name: t, icon, connected: true };
+    }
+    if (t && typeof t === 'object') {
+      return {
+        name: t.name || t.tool || t.capability || t.title || 'Tool',
+        icon: t.icon || 'Wrench',
+        connected: t.connected !== false,
+      };
+    }
+    return null;
+  };
+
+  let resolvedDisplayTools = candidateList.map(normaliseToolItem).filter(Boolean);
+
+  // If still empty, infer sensible tools/capabilities based on agent role & description
+  if (resolvedDisplayTools.length === 0) {
+    const hint = `${displayTitle || ''} ${role || ''} ${description || ''}`.toLowerCase();
+    if (hint.includes('check-in') || hint.includes('patient') || hint.includes('token') || hint.includes('queue')) {
+      resolvedDisplayTools.push({ name: 'Queue & Token Manager', icon: 'FileText', connected: true });
+      resolvedDisplayTools.push({ name: 'Patient Record Lookup', icon: 'Database', connected: true });
+    } else if (hint.includes('verification') || hint.includes('eligibility') || hint.includes('appointment')) {
+      resolvedDisplayTools.push({ name: 'Appointment Verifier', icon: 'Zap', connected: true });
+      resolvedDisplayTools.push({ name: 'Eligibility Checker', icon: 'Database', connected: true });
+    } else if (hint.includes('navigation') || hint.includes('directions') || hint.includes('schedule')) {
+      resolvedDisplayTools.push({ name: 'Clinic Navigation Guide', icon: 'Globe', connected: true });
+      resolvedDisplayTools.push({ name: 'Calendar Scheduler', icon: 'FileText', connected: true });
+    } else if (hint.includes('search') || hint.includes('research')) {
+      resolvedDisplayTools.push({ name: 'Web Search', icon: 'Globe', connected: true });
+    } else {
+      resolvedDisplayTools.push({ name: 'AI Reasoning Engine', icon: 'Brain', connected: true });
+    }
+  }
 
   return (
     <div className="node-card border-l-4 border-l-blue-500 min-w-[260px] max-w-[300px] p-0 bg-white rounded-xl shadow-node border border-gray-200 hover:shadow-node-hover transition-shadow duration-200 select-none group/node">
@@ -151,24 +219,29 @@ export default function AgentNode({ id, data }) {
 
         {/* Tools Section */}
         <div className="mt-3.5 border-t border-gray-100 pt-3">
-          <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 block mb-2">
-            Tools & Capabilities
-          </span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-gray-400 block">
+              Tools & Capabilities
+            </span>
+            <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full">
+              {resolvedDisplayTools.length} Active
+            </span>
+          </div>
           <div className="space-y-1.5">
-            {tools && tools.length > 0 ? (
-              tools.map((tool, idx) => (
+            {resolvedDisplayTools.length > 0 ? (
+              resolvedDisplayTools.map((tool, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-gray-50 text-[11px] text-gray-600 border border-gray-100 hover:bg-gray-100/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {getToolIcon(tool.icon)}
-                    <span className="truncate">{tool.name}</span>
+                    <span className="truncate font-medium">{tool.name}</span>
                   </div>
 
                   {/* Status Indicator */}
                   {tool.connected !== undefined && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${tool.connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
                           }`}

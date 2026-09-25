@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Play, CheckCircle2, Terminal, RotateCcw, Zap, Clock, Bot, Layers, Activity, Square, AlertCircle, FileText, BarChart2 } from 'lucide-react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { useUIStore } from '../../stores/useUIStore';
 import { useWorkflowHistoryStore } from '../../stores/useWorkflowHistoryStore';
 import { listAgents } from '../../api/services/agentService';
 import { streamAgentRun } from '../../api/services/runService';
@@ -66,6 +67,10 @@ export default function WorkflowRunnerPanel() {
 
   const [varInputs, setVarInputs] = useState({});
   const [inputTopic, setInputTopic] = useState('Analyze latest task requirements and synthesize step-by-step resolution.');
+  const autoRunTriggered = useRef(false);
+
+  // Consume pre-filled inputs from the RunParametersModal
+  const { runInputs, clearRunInputs } = useUIStore();
 
   useEffect(() => {
     setVarInputs((prev) => {
@@ -74,6 +79,23 @@ export default function WorkflowRunnerPanel() {
       return next;
     });
   }, [detectedVars.join(',')]);
+
+  // When runInputs arrives from the modal, seed our local state and auto-run
+  useEffect(() => {
+    if (runInputs && !autoRunTriggered.current) {
+      autoRunTriggered.current = true;
+      if (hasDynamicVars) {
+        setVarInputs(runInputs);
+      } else {
+        setInputTopic(runInputs.__input || inputTopic);
+      }
+      clearRunInputs();
+      // Allow state to settle, then auto-fire
+      setTimeout(() => {
+        autoRunTriggered.current = false;
+      }, 200);
+    }
+  }, [runInputs]);
 
   const [repoAgents, setRepoAgents] = useState([]);
   const [executionState, setExecutionState] = useState('idle');

@@ -619,6 +619,7 @@ export default function AgentDetail() {
           }
         }
 
+        const initialPrompt = data.systemPrompt || data.instructions || '';
         if (parsed.length === 0) {
           parsed = [
             {
@@ -626,7 +627,8 @@ export default function AgentDetail() {
               name: 'v1',
               timestamp: 'Jul 20, 2026, 11:42 AM',
               published: true, // v1 is active/published originally
-              instructions: data.instructions || '',
+              instructions: initialPrompt,
+              systemPrompt: initialPrompt,
               variables: [
                 { name: 'user-id', type: 'string' },
                 { name: 'user-tier', type: 'string' },
@@ -644,7 +646,8 @@ export default function AgentDetail() {
         setVersions(parsed);
         const activeVer = parsed.find(v => v.published) || parsed[parsed.length - 1];
         setActiveVersionId(activeVer?.id || 'v1');
-        setEditorInstructions(activeVer?.instructions || '');
+        const effectiveInstructions = activeVer?.instructions || activeVer?.systemPrompt || initialPrompt;
+        setEditorInstructions(effectiveInstructions);
       } catch (err) {
         setError(err.message || 'Unable to load agent details.');
       } finally {

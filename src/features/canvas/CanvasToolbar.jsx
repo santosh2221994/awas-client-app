@@ -13,6 +13,7 @@ import { useUIStore } from '../../stores/useUIStore';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import Button from '../../components/Button';
 import ProjectValidationModal from './ProjectValidationModal';
+import RunParametersModal from './RunParametersModal';
 import { cn } from '../../utils/cn';
 
 export default function CanvasToolbar() {
@@ -26,6 +27,7 @@ export default function CanvasToolbar() {
   const { nodes } = useCanvasStore();
   const [isValidationModalOpen, setIsValidationModalOpen] = useState(false);
   const [validationIssues, setValidationIssues] = useState([]);
+  const [isRunParamsModalOpen, setIsRunParamsModalOpen] = useState(false);
 
   const handleRunClick = () => {
     // Collect tools across all agent nodes
@@ -33,9 +35,11 @@ export default function CanvasToolbar() {
     const issues = [];
 
     agentNodes.forEach((node) => {
-      const tools = node.data?.tools || [];
+      const tools = Array.isArray(node.data?.tools) ? node.data.tools : [];
       tools.forEach((t) => {
-        const toolName = (t.name || typeof t === 'string' ? t : '').toLowerCase();
+        if (!t) return;
+        const rawName = typeof t === 'string' ? t : (t.name || t.title || t.id || '');
+        const toolName = String(rawName).toLowerCase();
         if (toolName.includes('gmail') && !t.connected) {
           issues.push('gmail integration is not connected. Please connect before using it.');
         } else if (toolName.includes('slack') && !t.connected) {
@@ -50,8 +54,16 @@ export default function CanvasToolbar() {
       setValidationIssues(issues);
       setIsValidationModalOpen(true);
     } else {
-      setActiveTab('run');
+      // Open the Run Parameters modal (CrewAI-style centered dialog)
+      setIsRunParamsModalOpen(true);
     }
+  };
+
+  const handleExecuteFromModal = (inputs) => {
+    setIsRunParamsModalOpen(false);
+    // Store the inputs so WorkflowRunnerPanel can pick them up
+    useUIStore.getState().setRunInputs(inputs);
+    setActiveTab('run');
   };
 
   return (
@@ -60,6 +72,11 @@ export default function CanvasToolbar() {
         isOpen={isValidationModalOpen}
         onClose={() => setIsValidationModalOpen(false)}
         issues={validationIssues}
+      />
+      <RunParametersModal
+        isOpen={isRunParamsModalOpen}
+        onClose={() => setIsRunParamsModalOpen(false)}
+        onExecute={handleExecuteFromModal}
       />
 
       <div className="flex items-center justify-between px-6 py-2 bg-white border-b border-gray-200 select-none">
